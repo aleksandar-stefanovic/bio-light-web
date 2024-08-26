@@ -1,0 +1,28 @@
+table {
+    border-collapse: collapse;
+}
+
+.main-table {
+    width: 100%;
+}
+
+.main-table td {
+    border: 1px solid black;
+}
+
+.main-table tr:first-child {
+    border: none;
+}
+
+.main-table th {
+    font-size: 0.8em;
+}
+
+.main-table td {
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.cell-padding-1 td {
+    padding: 4px;
+}
