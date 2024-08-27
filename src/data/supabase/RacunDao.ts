@@ -16,8 +16,13 @@ class RacunDao {
 
         const racun = data[0];
 
-        const racunYear = new Date(racun.datum).getFullYear();
         const currentYear = new Date().getFullYear();
+
+        if (!racun) {
+            return `1/${currentYear}`
+        }
+
+        const racunYear = new Date(racun.datum).getFullYear();
 
         const yearSuffix = currentYear % 100;
 

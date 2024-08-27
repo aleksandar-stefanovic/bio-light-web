@@ -3,7 +3,6 @@ import {Button, Checkbox, FormControlLabel, IconButton, InputAdornment, TextFiel
 import {DatePicker} from '@mui/x-date-pickers';
 import CloseIcon from '@mui/icons-material/Close';
 import React, {useCallback, useState} from 'react';
-import {addDays, format} from 'date-fns';
 import KupacPickerDialog from '../dialog/KupacPickerDialog';
 import ProizvodInput from '../component/ProizvodInput';
 import TabProps from './TabProps';
@@ -15,6 +14,8 @@ import Kupac from '../data/Kupac';
 import {useGlobalState} from "../GlobalStateProvider";
 import * as CenaDao from '../data/supabase/CenaDao';
 import Cena from '../data/Cena';
+import {Dayjs} from 'dayjs';
+import dayjs from 'dayjs';
 
 const _ = lodash;
 
@@ -85,16 +86,13 @@ export default function TabIzrada({style, visible, showSnackbar, nextRacunRb, in
         }
     ];
 
-    const [datumRacuna, setDatumRacuna] = React.useState<Date>(new Date());
+    const [datumRacuna, setDatumRacuna] = React.useState<Dayjs>(dayjs());
     const [valuta, setValuta] = React.useState('30');
     const datumValute = React.useMemo(() => {
-        try {
-            return addDays(datumRacuna, Number(valuta));
-        } catch (e) {
-            return addDays(datumRacuna, 30);
-        }
+        const valutaNum = !isNaN(Number(valuta)) ? Number(valuta) : 30
+        return datumRacuna.add(valutaNum, 'day');
     }, [datumRacuna, valuta]);
-    const datumValuteDisplay = format(datumValute, 'dd. MM. yyyy.');
+    const datumValuteDisplay = datumValute.format('DD.MM.YYYY.');
 
     const [kupac, setKupac] = React.useState<Kupac>();
     const [kupacPickerDialogOpen, setKupacDialogPickerOpen] = React.useState(false);
@@ -124,8 +122,8 @@ export default function TabIzrada({style, visible, showSnackbar, nextRacunRb, in
         if (kupac) {
             const racun: Racun = {
                 id: 0,
-                datum: datumRacuna,
-                datum_valute: datumValute,
+                datum: datumRacuna.toDate(),
+                datum_valute: datumValute.toDate(),
                 rb: nextRacunRb,
                 kupac: kupac,
                 stproizvodi: stProizvods,
@@ -139,7 +137,7 @@ export default function TabIzrada({style, visible, showSnackbar, nextRacunRb, in
                     await insertRacun(racun);
                     window.print();
                     showSnackbar('success', 'Otpremnica zatvorena');
-                } catch (e) {
+                } catch {
                     showSnackbar('error', 'Greška pri čuvanju otpremnice');
                 } finally {
                     cleanup();
@@ -175,13 +173,12 @@ export default function TabIzrada({style, visible, showSnackbar, nextRacunRb, in
             <DatePicker
                 label="Datum računa"
                 value={datumRacuna}
-                inputFormat='dd. MM. yyyy.'
+                format={'DD.MM.YYYY.'}
                 onChange={(newValue) => {
                     if (newValue) {
                         setDatumRacuna(newValue)
                     }
                 }}
-                renderInput={(params) => <TextField {...params} />}
             />
             <TextField
                 label='Valuta'

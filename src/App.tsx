@@ -136,7 +136,7 @@ function App() {
                 <ThemeProvider theme={theme}>
                     <CssBaseline />
                     <div style={{borderBottom: 1, borderColor: 'divider', display: 'flex', flexDirection: 'row'}}>
-                        <Tabs value={tabIndex} onChange={(event, index) => setTabIndex(index)}
+                        <Tabs value={tabIndex} onChange={(_, index) => setTabIndex(index)}
                               aria-label="basic tabs example">
                             <Tab label="Izrada računa"/>
                             <Tab label="Kupci"/>
