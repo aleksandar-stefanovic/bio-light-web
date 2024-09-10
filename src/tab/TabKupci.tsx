@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {DataGrid, GridColDef, GridRowId} from '@mui/x-data-grid';
+import React, {useEffect, useMemo, useState} from 'react';
+import {DataGrid, GridColDef, GridRowSelectionModel} from '@mui/x-data-grid';
 import Kupac from '../data/Kupac';
 import SearchBar from '../component/SearchBar';
 import {Button} from '@mui/material';
@@ -8,13 +8,15 @@ import KupacDialog from '../dialog/KupacDialog';
 import Promena from '../data/supabase/Promena';
 import * as KupacDao from '../data/supabase/KupacDao';
 import Racun from '../data/Racun';
-import {format, parseISO} from 'date-fns';
+import dayjs from 'dayjs';
+import Proizvod from '../data/Proizvod.ts';
 
 interface TabKupciProps extends TabProps {
+    proizvods: Proizvod[];
     kupacs: Kupac[];
 }
 
-export default function TabKupci({visible, style, kupacs, theme}: TabKupciProps) {
+export default function TabKupci({visible, style, kupacs, proizvods, theme}: TabKupciProps) {
 
     const [selectedKupac, setSelectedKupac] = React.useState<Kupac>();
     const [searchTerm, setSearchTerm] = React.useState<string>('')
@@ -41,25 +43,25 @@ export default function TabKupci({visible, style, kupacs, theme}: TabKupciProps)
             .map(({kupac}) => kupac)
     }, [kupacs, searchTerms]);
 
-    const kupciColumns: GridColDef[] = [
+    const kupciColumns: GridColDef[] = useMemo(() => [
         {field: 'ime', headerName: 'Naziv', flex: 1},
         {field: 'adresa', headerName: 'Adresa', flex: 1},
         {field: 'stanje', headerName: 'Stanje', align: 'right'}
-    ];
+    ], []);
 
     const racuniColumns: GridColDef[] = [
         {field: 'rb', headerName: 'RB'},
-        {field: 'tip', headerName: 'Tip', valueGetter: ({row}) => row.datum_valute ? 'Račun' : 'Uplata'},
-        {field: 'datum', headerName: 'Datum', valueGetter: ({row}) => format(parseISO(row.datum), 'dd.MM.yyyy.')},
-        {field: 'datum_valute', headerName: 'Datum valute', flex: 1, valueGetter: ({row}) => row.datum_valute && format(parseISO(row.datum_valute), 'dd.MM.yyyy.')},
-        {field: 'iznos', headerName: 'Pre popusta', align: 'right', flex: 1, valueGetter: ({row}) => row.iznos.toFixed(2), headerAlign: 'right'},
-        {field: 'popust', headerName: 'Popust', align: 'right', flex: 1, valueGetter: ({row}) => row.popust?.toFixed(2), headerAlign: 'right'},
+        {field: 'tip', headerName: 'Tip', valueGetter: (_, row) => row.datum_valute ? 'Račun' : 'Uplata'},
+        {field: 'datum', headerName: 'Datum', valueGetter: (value) => dayjs(value).format('DD.MM.YYYY.')},
+        {field: 'datum_valute', headerName: 'Datum valute', flex: 1, valueGetter: (value) => value && dayjs(value).format('DD.MM.YYYY.')},
+        {field: 'iznos', headerName: 'Pre popusta', align: 'right', flex: 1, valueGetter: (value) => Number(value).toFixed(2), headerAlign: 'right'},
+        {field: 'popust', headerName: 'Popust', align: 'right', flex: 1, valueGetter: (value) => value && Number(value).toFixed(2), headerAlign: 'right'},
         {
             field: 'za_uplatu',
             headerName: 'Iznos',
             align: 'right',
             flex: 1,
-            valueGetter: ({row}) => {
+            valueGetter: (_, row) => {
                 if (row.za_uplatu) {
                     return row.za_uplatu.toFixed(2);
                 } else {
@@ -84,24 +86,19 @@ export default function TabKupci({visible, style, kupacs, theme}: TabKupciProps)
         setKupacDialogOpen(false);
     }
 
-    function openCeneDialog() {
-
-    }
-
-    async function onKupacRowSelected([kupacId]: GridRowId[]) {
+    async function onKupacRowSelected([kupacId]: GridRowSelectionModel) {
         setSelectedKupac(kupacs.find(kupac => kupac.id === kupacId));
     }
 
-    return <div style={{...style, display: visible ? 'flex' : 'none', flexDirection: 'row', gap: 10, padding: 10}}>
-        <div style={{flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'start'}}>
+    return <div style={{...style, display: visible ? 'flex' : 'none', flexDirection: 'row', gap: 10, padding: 10, height: 1}}> {/* Setting the height to any value fixes the layout issues somehow? */}
+        <div style={{flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'start', height: '100%', gap: 10}}>
             <div style={{flex: 6, width: '100%', minHeight: 50}}>
                 <DataGrid style={{width: '100%'}}
                           columns={kupciColumns}
                           rows={kupacsFiltered}
-                          onSelectionModelChange={onKupacRowSelected}
+                          onRowSelectionModelChange={onKupacRowSelected}
                           rowHeight={40}
-                          headerHeight={30}
-                          selectionModel=''
+                          columnHeaderHeight={30}
                           hideFooterSelectedRowCount/>
             </div>
             <div style={{width: '100%', flex: 4, minHeight: 50}}>
@@ -117,10 +114,12 @@ export default function TabKupci({visible, style, kupacs, theme}: TabKupciProps)
         <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
             <SearchBar onSearchTerm={setSearchTerm} timeout={300}/>
             <Button variant='outlined' size='small' onClick={insertKupac}>Dodaj kupca</Button>
-            <Button variant='outlined' size='small' disabled={!selectedKupac} onClick={openKupacDialog}>Pogledaj kupca</Button>
-            <Button variant='outlined' size='small' disabled={!selectedKupac} onClick={openCeneDialog}>Izmeni cene</Button>
+            <Button variant='outlined' size='small' disabled={!selectedKupac} onClick={openKupacDialog}>Izmeni kupca</Button>
             <Button variant='outlined' size='small' disabled={true}>Napravi izveštaj za kupca</Button>
         </div>
-        {selectedKupac && <KupacDialog open={kupacDialogOpen} kupac={selectedKupac} onClose={onKupacDialogClose} />}
+        {selectedKupac && <KupacDialog open={kupacDialogOpen}
+                                       kupac={selectedKupac}
+                                       proizvods={proizvods}
+                                       onClose={onKupacDialogClose} />}
     </div>
 }

@@ -1,6 +1,6 @@
-import Kupac from '../Kupac';
+import Kupac, {KupacId} from '../Kupac';
 import supabase from '../../supabase/client';
-import Promena from './Promena';
+import Promena from '../Promena';
 import _ from 'lodash';
 
 export async function getAll(): Promise<Kupac[]> {
@@ -23,4 +23,18 @@ export async function getAllPromenas(kupac: Kupac): Promise<Promena[]> {
     }
     const promenas: Promena[] = [...racunsResponse.data, ...uplatasResponse.data];
     return _.sortBy(promenas, (promena) => promena.datum);
+}
+
+export async function updateStanje(kupacId: KupacId, amount: number) {
+    const {data, error} = await supabase.from('kupci').select('stanje').eq('id', kupacId);
+
+    if (error) {
+        throw error;
+    }
+
+    const [{stanje}] = data;
+
+    const novoStanje = stanje + amount;
+
+    await supabase.from('kupci').update({stanje: novoStanje}).eq('id', kupacId);
 }

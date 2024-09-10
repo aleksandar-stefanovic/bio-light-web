@@ -14,7 +14,7 @@ import React from 'react';
 import SearchBar from "../component/SearchBar";
 import CloseIcon from '@mui/icons-material/Close';
 
-interface KupacDialogPickerProps {
+export interface KupacDialogPickerProps {
   open: boolean;
   onSelectKupac: (kupac: Kupac) => void;
   onClose: () => void;

@@ -26,6 +26,7 @@ import supabase from './supabase/client';
 import {User} from '@supabase/supabase-js';
 import Proizvod from './data/Proizvod';
 import ProizvodDao from './data/supabase/ProizvodDao';
+import TabUplate from './tab/TabUplate.tsx';
 
 function App() {
     const [tabIndex, setTabIndex] = useState(0);
@@ -67,8 +68,7 @@ function App() {
         .subscribe()
 
         return () => {
-            // noinspection JSIgnoredPromiseFromCall
-            channel.unsubscribe();
+            void channel.unsubscribe();
         }
 
     }, [refetch]);
@@ -134,13 +134,14 @@ function App() {
     return user ? <>
             <div className="screen-only" style={{width: '100%', height: '100%', display: 'flex', flexDirection: 'column'}}>
                 <ThemeProvider theme={theme}>
-                    <CssBaseline />
+                    <CssBaseline/>
                     <div style={{borderBottom: 1, borderColor: 'divider', display: 'flex', flexDirection: 'row'}}>
                         <Tabs value={tabIndex} onChange={(_, index) => setTabIndex(index)}
                               aria-label="basic tabs example">
                             <Tab label="Izrada računa"/>
                             <Tab label="Kupci"/>
                             <Tab label="Računi"/>
+                            <Tab label="Uplate"/>
                         </Tabs>
                         <div style={{flex: 1}}></div>
                         <Button onClick={signOut}>Odjavi&nbsp;se</Button>
@@ -154,8 +155,13 @@ function App() {
                                theme={theme}
                                proizvods={proizvods}/>
                     <TabKupci
-                        visible={tabIndex === 1} style={{flex: 1}} showSnackbar={showSnackbar}
-                        kupacs={kupacs} theme={theme}/>
+                        visible={tabIndex === 1}
+                        style={{flex: 1}}
+                        showSnackbar={showSnackbar}
+                        kupacs={kupacs}
+                        proizvods={proizvods}
+                        theme={theme}
+                    />
                     <TabRacuni
                         visible={tabIndex === 2}
                         style={{flex: 1}}
@@ -163,6 +169,12 @@ function App() {
                         showSnackbar={showSnackbar}
                         theme={theme}
                         proizvods={proizvods}/>
+                    <TabUplate visible={tabIndex === 3}
+                               kupacs={kupacs}
+                               style={{flex: 1}}
+                               showSnackbar={showSnackbar}
+                               theme={theme}
+                    />
                     <Snackbar
                         open={snackbarState?.open}
                         autoHideDuration={5000}

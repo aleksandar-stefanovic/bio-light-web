@@ -9,11 +9,7 @@ interface RacunDocumentProps {
     data: {racun: Racun, kupac: Kupac, proizvods: Proizvod[]}
 }
 
-export default function RacunDocument({data}: RacunDocumentProps) {
-    const racun = data.racun;
-    const kupac = data.kupac;
-    const proizvods = data.proizvods;
-
+export default function RacunDocument({data: {racun, kupac, proizvods}}: RacunDocumentProps) {
     const format = new Intl.DateTimeFormat('sr-RS', {year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC'})
     const racunNumber = `${racun.rb}/${racun.datum.getFullYear() % 100}`
 
@@ -87,14 +83,14 @@ export default function RacunDocument({data}: RacunDocumentProps) {
                     <th>Osnovica</th>
                     <th>Vrednost</th>
                 </tr>
-                {racun.stproizvodi?.map(stProizvod => {
+                {racun.stproizvodi?.map((stProizvod, index) => {
                     const proizvod = proizvods.find(p => p.id === stProizvod.proizvod_id);
                     const vrednost = stProizvod.cena * stProizvod.kolicina;
                     const osnovica = vrednost * (1 - stProizvod.rabat);
                     if (!proizvod) {
                         throw Error('Greška u proizvodu')
                     }
-                    return <tr>
+                    return <tr key={index}>
                         <td>{stProizvod.rinfuz ? proizvod.ean_rinfuz : proizvod.ean}</td>
                         <td>{proizvod.ime} {stProizvod.rinfuz ? proizvod.nastavak_kg : proizvod.nastavak_kom}</td>
                         <td>{stProizvod.kolicina}</td>
@@ -109,6 +105,7 @@ export default function RacunDocument({data}: RacunDocumentProps) {
             </table>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '2%'}}>
                 <table>
+                    <tbody>
                     <tr>
                         <td>Datum prometa:</td>
                         <td>{format.format(racun.datum)}</td>
@@ -125,9 +122,11 @@ export default function RacunDocument({data}: RacunDocumentProps) {
                         <td>Mesto prometa:</td>
                         <td>Jagodina</td>
                     </tr>
+                    </tbody>
                 </table>
                 <div>
-                    <table className='cell-padding-1' style={{border: '1px solid black'}}>
+                    <table className="cell-padding-1" style={{border: '1px solid black'}}>
+                        <tbody>
                         <tr>
                             <td style={{width: 150}}>Prodajna vrednost:</td>
                             <td style={{textAlign: 'end'}}>{racun.iznos.toFixed(2)}</td>
@@ -144,6 +143,7 @@ export default function RacunDocument({data}: RacunDocumentProps) {
                             <td>Ukupno:</td>
                             <td style={{textAlign: 'end'}}>{racun.za_uplatu.toFixed(2)}</td>
                         </tr>
+                        </tbody>
                     </table>
                     <p style={{width: '100%'}}>Slovima: {serbianString(racun.za_uplatu)}</p>
                 </div>
@@ -152,10 +152,12 @@ export default function RacunDocument({data}: RacunDocumentProps) {
                 style={{fontWeight: 'bold'}}>97 {racunNumber}</span></p>
 
             <table style={{marginTop: '4%'}}>
+                <tbody>
                 <tr>
                     <td style={{verticalAlign: 'top', width: 90}}>Napomena:</td>
                     <td>SZR „BIO-LIGHT“ nije obveznik PDV-a.<br/>PDV nije obračunat.</td>
                 </tr>
+                </tbody>
             </table>
 
             <p style={{marginTop: '2%'}}>

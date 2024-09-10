@@ -1,6 +1,8 @@
 import Racun from '../Racun';
 import supabase from '../../supabase/client';
 import {sortBy, reverse} from 'lodash';
+import StProizvodDao from './StProizvodDao.ts';
+import {updateStanje} from './KupacDao.ts';
 
 class RacunDao {
     async getNextRacunRb(): Promise<string> {
@@ -8,6 +10,7 @@ class RacunDao {
         .from('racuni')
         .select('datum,rb')
         .order('datum', {ascending: false})
+        .order('id', {ascending: false})
         .limit(1);
 
         if (error) {
@@ -42,25 +45,54 @@ class RacunDao {
         return reverse(sortBy(data, 'datum'));
     }
 
-    async insert(...racuns: Racun[]): Promise<Racun[]> {
-        // return Promise.all(racuns.map(async (racun) => {
-        //     const racunDto = {
-        //         rb: racun.rb,
-        //         kupac_id: racun.kupac.id,
-        //         datum: racun.datum,
-        //         datum_valute: racun.datum_valute,
-        //         iznos: racun.iznos,
-        //         popust: racun.popust,
-        //         za_uplatu: racun.za_uplatu
-        //     };
-        //     const [savedRacun] = await super.insert(racunDto);
-        //     savedRacun.stproizvodi = [...racun.stproizvodi];
-        //     const stProizvods = [...racun.stproizvodi];
-        //     stProizvods.forEach(proizvod => proizvod.racun_id = savedRacun.id || 0);
-        //     await StProizvodDao.insert(stProizvods);
-        //     return savedRacun;
-        // }));
-        return [];
+    async getRangeLast(skip: number, count: number): Promise<Racun[]> {
+        const {data, error} = await supabase
+        .from('racuni')
+        .select('*')
+        .order('id', {ascending: false})
+        .range(skip, skip + count)
+        if (error) {
+            throw error;
+        }
+        return data;
+    }
+
+    async insert(racun: Racun): Promise<Racun> {
+        const {data, error} = await supabase.from('racuni').insert({
+            rb: racun.rb,
+            kupac_id: racun.kupac_id,
+            datum: racun.datum,
+            datum_valute: racun.datum_valute,
+            iznos: racun.iznos,
+            popust: racun.popust,
+            za_uplatu: racun.za_uplatu,
+            saldo: racun.saldo
+        } satisfies Partial<Racun>)
+        .select();
+
+        if (error) {
+            console.error(error);
+            throw error;
+        }
+
+        try {
+            await updateStanje(racun.kupac_id, racun.za_uplatu);
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+
+        const [{id}] = data;
+        racun.id = id;
+        const stProizvods = [...racun.stproizvodi];
+        stProizvods.forEach(proizvod => proizvod.racun_id = id);
+        try {
+            await StProizvodDao.insert(stProizvods);
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+        return racun;
     }
 }
 

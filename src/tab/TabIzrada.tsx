@@ -56,23 +56,23 @@ export default function TabIzrada({style, visible, showSnackbar, nextRacunRb, in
             field: 'naziv',
             headerName: 'Naziv',
             flex: 1,
-            valueGetter: params => proizvods.find(({id}) => id === params.row.proizvod_id)?.ime
+            valueGetter: (_, row) => proizvods.find(({id}) => id === row.proizvod_id)?.ime
         },
         {field: 'kolicina', headerName: 'Količina', width: 100},
-        {field: 'jm', headerName: 'JM', width: 50, valueGetter: ({row}) => row.rinfuz ? 'kg' : 'kom'},
-        {field: 'cena', headerName: 'Cena', width: 100, valueGetter: ({row}) => row.cena.toFixed(2)},
-        {field: 'rabat', headerName: 'Rabat', width: 100, valueGetter: ({row}) => (row.rabat * 100) + '%'},
+        {field: 'jm', headerName: 'JM', width: 50, valueGetter: (_, row) => row.rinfuz ? 'kg' : 'kom'},
+        {field: 'cena', headerName: 'Cena', width: 100, valueGetter: (value) => Number(value).toFixed(2)},
+        {field: 'rabat', headerName: 'Rabat', width: 100, valueGetter: (value) => (value * 100) + '%'},
         {
             field: 'osnovica',
             headerName: 'Osnovica',
             width: 100,
-            valueGetter: ({row}) => (row.cena * row.kolicina * (1 - row.rabat)).toFixed(2)
+            valueGetter: (_, row) => (row.cena * row.kolicina * (1 - row.rabat)).toFixed(2),
         },
         {
             field: 'vrednost',
             headerName: 'Vrednost',
             width: 100,
-            valueGetter: ({row}) => (row.cena * row.kolicina).toFixed(2)
+            valueGetter: (_, row) => (row.cena * row.kolicina).toFixed(2),
         },
         {
             field: 'Izbriši', width: 100,
@@ -81,7 +81,7 @@ export default function TabIzrada({style, visible, showSnackbar, nextRacunRb, in
                     <IconButton onClick={() => removeRow(params.row.na_spisku)}>
                         <CloseIcon/>
                     </IconButton>
-                )
+                );
             }
         }
     ];
@@ -102,7 +102,6 @@ export default function TabIzrada({style, visible, showSnackbar, nextRacunRb, in
         if (kupac) {
             CenaDao.getForKupac(kupac).then(cenas => {
                 setKupacCenas(cenas);
-                console.log(cenas);
             })
         }
     }, [kupac, setKupacCenas]);
@@ -120,16 +119,21 @@ export default function TabIzrada({style, visible, showSnackbar, nextRacunRb, in
 
     const printDocument = useCallback(async () => {
         if (kupac) {
+            if (!kupac.id) {
+                showSnackbar('error', `Kupac ${kupac.ime} nema ID.`);
+                return;
+            }
             const racun: Racun = {
                 id: 0,
                 datum: datumRacuna.toDate(),
                 datum_valute: datumValute.toDate(),
                 rb: nextRacunRb,
-                kupac: kupac,
+                kupac_id: kupac.id,
                 stproizvodi: stProizvods,
                 iznos: iznos,
                 popust: popust,
-                za_uplatu: zaUplatu
+                za_uplatu: zaUplatu,
+                saldo: kupac.stanje + zaUplatu
             };
             setGlobalState({racunToPrint: {racun, kupac, proizvods: proizvods}});
             setTimeout(async () => {
@@ -137,7 +141,8 @@ export default function TabIzrada({style, visible, showSnackbar, nextRacunRb, in
                     await insertRacun(racun);
                     window.print();
                     showSnackbar('success', 'Otpremnica zatvorena');
-                } catch {
+                } catch (error) {
+                    console.error(error);
                     showSnackbar('error', 'Greška pri čuvanju otpremnice');
                 } finally {
                     cleanup();
@@ -184,9 +189,7 @@ export default function TabIzrada({style, visible, showSnackbar, nextRacunRb, in
                 label='Valuta'
                 value={valuta}
                 onChange={(event) => setValuta(event.target.value)}
-                InputProps={{
-                    endAdornment: <InputAdornment position="end">dana</InputAdornment>
-                }}
+                slotProps={{input: {endAdornment: <InputAdornment position="end">dana</InputAdornment>}}}
             />
             <TextField
                 label='Datum valute'

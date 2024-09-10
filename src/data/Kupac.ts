@@ -1,8 +1,10 @@
 import Racun from './Racun';
-import {Uplata} from '../Uplata';
+import Uplata from './Uplata';
+
+export type KupacId = number;
 
 export default interface Kupac {
-  id?: number;
+  id?: KupacId;
   ime: string;
   adresa: string;
   pib: string;
@@ -16,4 +18,5 @@ export default interface Kupac {
   otpremljeno_mesto?: string;
   racuni: Racun[];
   uplate: Uplata[];
+  stanje: number;
 }

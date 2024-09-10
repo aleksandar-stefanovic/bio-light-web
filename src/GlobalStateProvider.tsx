@@ -4,7 +4,8 @@ import Kupac from "./data/Kupac";
 import Proizvod from "./data/Proizvod";
 
 interface GlobalStateProps {
-    racunToPrint?: {racun: Racun, kupac: Kupac, proizvods: Proizvod[]}
+    racunToPrint?: {racun: Racun, kupac: Kupac, proizvods: Proizvod[]},
+    proizvods?: Proizvod[]
 }
 
 const globalStateContext = React.createContext<GlobalStateProps>({});
