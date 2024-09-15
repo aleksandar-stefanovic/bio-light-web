@@ -11,30 +11,37 @@ export async function getAll(): Promise<Kupac[]> {
     return data;
 }
 
-export async function getAllPromenas(kupac: Kupac): Promise<Promena[]> {
-    const racunsPromise = supabase.from('racuni').select('*').eq('kupac_id', kupac.id);
-    const uplatasPromise = supabase.from('uplate').select('*').eq('kupac_id', kupac.id);
-    const [racunsResponse, uplatasResponse] = await Promise.all([racunsPromise, uplatasPromise]);
-    if (racunsResponse.error) {
-        throw racunsResponse.error;
+export async function getAllPromenas(kupacId: KupacId, invoicesSelect: string = '*', paymentsSelect: string = '*'): Promise<Promena[]> {
+    const invoicesPromise = supabase.from('racuni').select(invoicesSelect as '*').eq('kupac_id', kupacId);
+    const uplatasPromise = supabase.from('uplate').select(paymentsSelect as '*').eq('kupac_id', kupacId);
+    const [invoicesResponse, uplatasResponse] = await Promise.all([invoicesPromise, uplatasPromise]);
+    if (invoicesResponse.error) {
+        throw invoicesResponse.error;
     }
     if (uplatasResponse.error) {
         throw uplatasResponse.error;
     }
-    const promenas: Promena[] = [...racunsResponse.data, ...uplatasResponse.data];
+    const promenas: Promena[] = [...invoicesResponse.data, ...uplatasResponse.data];
     return _.sortBy(promenas, (promena) => promena.datum);
 }
 
-export async function updateStanje(kupacId: KupacId, amount: number) {
-    const {data, error} = await supabase.from('kupci').select('stanje').eq('id', kupacId);
+/** Reclaculates balance for all the related Invoices, Payments and finally the Customer. */
+export async function recalculateBalance(kupacId: KupacId) {
 
-    if (error) {
-        throw error;
-    }
+    const promenas = await getAllPromenas(kupacId, 'id, za_uplatu, datum, datum_valute', 'id, iznos, datum');
 
-    const [{stanje}] = data;
+    let balance = 0;
+    promenas.forEach(promena => {
+        const isInvoice = 'datum_valute' in promena;
+        if (isInvoice) {
+            balance += promena.za_uplatu;
+        } else {
+            balance -= promena.iznos;
+        }
+        promena.saldo = balance;
+    });
 
-    const novoStanje = stanje + amount;
 
-    await supabase.from('kupci').update({stanje: novoStanje}).eq('id', kupacId);
+
+    await supabase.from('kupci').update({stanje: balance}).eq('id', kupacId);
 }

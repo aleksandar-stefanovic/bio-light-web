@@ -5,9 +5,9 @@ import SearchBar from '../component/SearchBar';
 import {Button} from '@mui/material';
 import TabProps from './TabProps';
 import KupacDialog from '../dialog/KupacDialog';
-import Promena from '../data/supabase/Promena';
+import Promena from '../data/Promena.ts';
 import * as KupacDao from '../data/supabase/KupacDao';
-import Racun from '../data/Racun';
+import Invoice from '../data/Invoice.ts';
 import dayjs from 'dayjs';
 import Proizvod from '../data/Proizvod.ts';
 
@@ -25,7 +25,7 @@ export default function TabKupci({visible, style, kupacs, proizvods, theme}: Tab
 
     useEffect(() => {
         if (selectedKupac) {
-            KupacDao.getAllPromenas(selectedKupac).then(promenas => setPromenas(promenas));
+            KupacDao.getAllPromenas(selectedKupac.id!).then(promenas => setPromenas(promenas));
         }
     }, [selectedKupac]);
 
@@ -49,7 +49,7 @@ export default function TabKupci({visible, style, kupacs, proizvods, theme}: Tab
         {field: 'stanje', headerName: 'Stanje', align: 'right'}
     ], []);
 
-    const racuniColumns: GridColDef[] = [
+    const invoiceColumns: GridColDef[] = [
         {field: 'rb', headerName: 'RB'},
         {field: 'tip', headerName: 'Tip', valueGetter: (_, row) => row.datum_valute ? 'Račun' : 'Uplata'},
         {field: 'datum', headerName: 'Datum', valueGetter: (value) => dayjs(value).format('DD.MM.YYYY.')},
@@ -103,9 +103,9 @@ export default function TabKupci({visible, style, kupacs, proizvods, theme}: Tab
             </div>
             <div style={{width: '100%', flex: 4, minHeight: 50}}>
                 <DataGrid style={{width: '100%', flex: 4, background: theme.palette.mode === 'light' ? '#f2f2f2' : undefined}}
-                          columns={racuniColumns}
+                          columns={invoiceColumns}
                           rows={promenas}
-                          getRowId={(row: Promena) => row.id + ((row as Racun).popust ?? -1)?.toString() }
+                          getRowId={(row: Promena) => row.id + ((row as Invoice).popust ?? -1)?.toString() }
                           rowHeight={40}
                           hideFooter/>
             </div>

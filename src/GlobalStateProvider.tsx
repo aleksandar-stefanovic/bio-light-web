@@ -1,10 +1,10 @@
 import React, {Dispatch, useContext} from 'react';
-import Racun from "./data/Racun";
+import Invoice from "./data/Invoice.ts";
 import Kupac from "./data/Kupac";
 import Proizvod from "./data/Proizvod";
 
 interface GlobalStateProps {
-    racunToPrint?: {racun: Racun, kupac: Kupac, proizvods: Proizvod[]},
+    invoiceToPrint?: {invoice: Invoice, kupac: Kupac, proizvods: Proizvod[]},
     proizvods?: Proizvod[]
 }
 

@@ -1,24 +1,26 @@
-import React, {useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import TabProps from './TabProps';
 import {DataGrid, GridColDef, GridRowSelectionModel} from '@mui/x-data-grid';
-import Racun from '../data/Racun';
+import Invoice from '../data/Invoice.ts';
 import dayjs from 'dayjs';
 import SearchBar from '../component/SearchBar';
-import {Button} from '@mui/material';
+import {Button, Dialog, DialogContent} from '@mui/material';
 import Proizvod from '../data/Proizvod';
 import {useGlobalState} from '../GlobalStateProvider';
 import StProizvod from '../data/StProizvod';
 import StProizvodDao from '../data/supabase/StProizvodDao';
-import RacunDao from '../data/supabase/RacunDao';
 import Kupac, {KupacId} from '../data/Kupac';
 import {sortBy} from 'lodash';
+import TabIzrada from './TabIzrada.tsx';
+import {useRepository} from '../repository/Repository.tsx';
 
-interface TabRacuniProps extends TabProps {
+interface TabInvoicesProps extends TabProps {
     proizvods: Proizvod[];
     kupacs: Kupac[];
+    onInvoiceUpdate: (invoice: Invoice) => Promise<void>
 }
 
-export default function TabRacuni({kupacs, visible, style, proizvods}: TabRacuniProps) {
+export default function TabInvoices({onInvoiceUpdate, kupacs, visible, style, proizvods, showSnackbar, theme}: TabInvoicesProps) {
 
     const columns: GridColDef[] = [
         {field: 'rb', headerName: 'RB', width: 70},
@@ -42,8 +44,9 @@ export default function TabRacuni({kupacs, visible, style, proizvods}: TabRacuni
 
     const [, setGlobalState] = useGlobalState();
     const [searchTerm, setSearchTerm] = React.useState<string>('');
-    const [racuns, setRacuns] = useState<Racun[]>([]);
-    const filteredRacuns = useMemo(() => {
+    const {invoices} = useRepository();
+    const [invoiceEditorOpen, setInvoiceEditorOpen] = useState<boolean>(false);
+    const filteredInvoices = useMemo(() => {
         if (searchTerm) {
             const kupacScores = new Map<KupacId, number>();
             kupacs.forEach(kupac => {
@@ -57,47 +60,44 @@ export default function TabRacuni({kupacs, visible, style, proizvods}: TabRacuni
                 }
             });
 
-            const viableRacuns = racuns.filter(racun => kupacScores.has(racun.kupac_id));
-            return sortBy(viableRacuns, racun => -(kupacScores.get(racun.kupac_id)!));
+            const viableInvoices = invoices.filter(invoice => kupacScores.has(invoice.kupac_id));
+            return sortBy(viableInvoices, invoice => -(kupacScores.get(invoice.kupac_id)!));
         } else {
-            return racuns;
+            return invoices;
         }
-    }, [kupacs, racuns, searchTerm]);
-    const [selectedRacun, setSelectedRacun] = React.useState<Racun>();
+    }, [invoices, kupacs, searchTerm]);
+    const [selectedInvoice, setSelectedInvoice] = React.useState<Invoice|undefined>();
     const [selectedStProizvods, setSelectedStProizvods] = React.useState<StProizvod[]>([]);
 
     React.useEffect(() => {
-        if (visible && racuns.length === 0) {
-            RacunDao.getAll().then(racuns => {
-                setRacuns(racuns);
-            }).catch(() => {
-                window.alert('Greška pri učitavanju računa')
-            });
-        }
-    }, [visible, racuns, kupacs]);
-
-    React.useEffect(() => {
         (async function () {
-            if (selectedRacun) {
-                const stProizvods = await StProizvodDao.getByRacunId(selectedRacun.id);
+            if (selectedInvoice) {
+                const stProizvods = await StProizvodDao.getByInvoiceId(selectedInvoice.id);
+                selectedInvoice.stproizvodi = stProizvods;
                 setSelectedStProizvods(stProizvods);
             }
         })();
 
-    }, [selectedRacun])
+    }, [selectedInvoice])
 
-    function print() {
-        if (selectedRacun) {
-            const kupac = kupacs.find(kupac => kupac.id === selectedRacun.kupac_id)!;
-            setGlobalState({racunToPrint: {racun: selectedRacun, kupac, proizvods}});
+    const print = useCallback(() => {
+        if (selectedInvoice) {
+            const kupac = kupacs.find(kupac => kupac.id === selectedInvoice.kupac_id)!;
+            setGlobalState({invoiceToPrint: {invoice: selectedInvoice, kupac, proizvods}});
             setTimeout(async () => {
                 window.print();
             }, 500);
         }
-    }
+    }, [kupacs, proizvods, selectedInvoice, setGlobalState]);
+
+    const edit = useCallback(() => {
+        if (selectedInvoice) {
+            setInvoiceEditorOpen(true);
+        }
+    }, [selectedInvoice]);
 
     function handleRowSelection(ids: GridRowSelectionModel) {
-        setSelectedRacun(racuns.find(racun => racun.id === ids[0]));
+        setSelectedInvoice(invoices.find(invoice => invoice.id === ids[0]));
     }
 
     return <div style={{...style, display: visible ? 'flex' : 'none', flexDirection: 'row', padding: 10, gap: 10}}>
@@ -105,8 +105,8 @@ export default function TabRacuni({kupacs, visible, style, proizvods}: TabRacuni
             <div style={{flex: 3, minHeight: 50, maxHeight: '100vh'}}>
                 <DataGrid
                     columns={columns}
-                    rows={filteredRacuns}
-                    getRowId={racun => racun.id}
+                    rows={filteredInvoices}
+                    getRowId={invoice => invoice.id}
                     autoPageSize
                     onRowSelectionModelChange={handleRowSelection}/>
             </div>
@@ -124,8 +124,22 @@ export default function TabRacuni({kupacs, visible, style, proizvods}: TabRacuni
         <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
             <SearchBar onSearchTerm={setSearchTerm} timeout={300}/>
             <Button variant='outlined' onClick={print}>Štampaj</Button>
+            <Button variant='outlined' onClick={edit}>Izmeni račun</Button>
             {/*<Button variant='outlined' size='small' disabled={!selectedKupac} onClick={openKupacDialog}>Pogledaj kupca</Button>*/}
             {/*<Button variant='outlined' size='small' disabled={!selectedKupac} onClick={openCeneDialog}>Izmeni cene</Button>*/}
         </div>
+
+        <Dialog open={invoiceEditorOpen} onClose={() => { setInvoiceEditorOpen(false); }} fullWidth maxWidth='xl'>
+            <DialogContent>
+                <TabIzrada nextInvoiceNo={selectedInvoice?.rb ?? '0'}
+                           onInvoiceSave={onInvoiceUpdate}
+                           kupacs={kupacs}
+                           proizvods={proizvods}
+                           visible={invoiceEditorOpen}
+                           showSnackbar={showSnackbar}
+                           existingInvoice={selectedInvoice}
+                           theme={theme}/>
+            </DialogContent>
+        </Dialog>
     </div>;
 }

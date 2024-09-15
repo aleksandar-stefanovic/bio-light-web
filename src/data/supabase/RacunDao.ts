@@ -1,11 +1,10 @@
-import Racun from '../Racun';
+import Invoice from '../Invoice.ts';
 import supabase from '../../supabase/client';
-import {sortBy, reverse} from 'lodash';
 import StProizvodDao from './StProizvodDao.ts';
-import {updateStanje} from './KupacDao.ts';
+import {recalculateBalance} from './KupacDao.ts';
 
-class RacunDao {
-    async getNextRacunRb(): Promise<string> {
+class InvoiceDao {
+    async getNextInvoiceNo(): Promise<string> {
         const {data, error} = await supabase
         .from('racuni')
         .select('datum,rb')
@@ -17,35 +16,41 @@ class RacunDao {
             throw error;
         }
 
-        const racun = data[0];
+        const invoice = data[0];
 
         const currentYear = new Date().getFullYear();
 
-        if (!racun) {
+        if (!invoice) {
             return `1/${currentYear}`
         }
 
-        const racunYear = new Date(racun.datum).getFullYear();
+        const invoiceYear = new Date(invoice.datum).getFullYear();
 
         const yearSuffix = currentYear % 100;
 
-        if (racunYear !== currentYear) {
+        if (invoiceYear !== currentYear) {
             return `1/${yearSuffix}`;
         } else {
-            const rb = Number((racun.rb as string).split('/')[0]);
+            const rb = Number((invoice.rb as string).split('/')[0]);
             return `${rb + 1}/${yearSuffix}`;
         }
     }
 
-    async getAll(): Promise<Racun[]> {
-        const {data, error} = await supabase.from('racuni').select('*');
+    async getAll(): Promise<Invoice[]> {
+        const {data, error} = await supabase.from('racuni').select('*').order('id', {ascending: false});
         if (error) {
             throw error;
         }
-        return reverse(sortBy(data, 'datum'));
+
+        data?.forEach(invoice => {
+            invoice.datum = new Date(invoice.datum);
+            invoice.datum_valute = new Date(invoice.datum_valute);
+        });
+
+        return data;
     }
 
-    async getRangeLast(skip: number, count: number): Promise<Racun[]> {
+    async getRangeLast(skip: number, count: number): Promise<Invoice[]> {
         const {data, error} = await supabase
         .from('racuni')
         .select('*')
@@ -57,17 +62,17 @@ class RacunDao {
         return data;
     }
 
-    async insert(racun: Racun): Promise<Racun> {
+    async insert(invoice: Invoice): Promise<Invoice> {
         const {data, error} = await supabase.from('racuni').insert({
-            rb: racun.rb,
-            kupac_id: racun.kupac_id,
-            datum: racun.datum,
-            datum_valute: racun.datum_valute,
-            iznos: racun.iznos,
-            popust: racun.popust,
-            za_uplatu: racun.za_uplatu,
-            saldo: racun.saldo
-        } satisfies Partial<Racun>)
+            rb: invoice.rb,
+            kupac_id: invoice.kupac_id,
+            datum: invoice.datum,
+            datum_valute: invoice.datum_valute,
+            iznos: invoice.iznos,
+            popust: invoice.popust,
+            za_uplatu: invoice.za_uplatu,
+            saldo: invoice.saldo
+        } satisfies Partial<Invoice>)
         .select();
 
         if (error) {
@@ -76,15 +81,15 @@ class RacunDao {
         }
 
         try {
-            await updateStanje(racun.kupac_id, racun.za_uplatu);
+            await recalculateBalance(invoice.kupac_id);
         } catch (error) {
             console.error(error);
             throw error;
         }
 
         const [{id}] = data;
-        racun.id = id;
-        const stProizvods = [...racun.stproizvodi];
+        invoice.id = id;
+        const stProizvods = [...invoice.stproizvodi];
         stProizvods.forEach(proizvod => proizvod.racun_id = id);
         try {
             await StProizvodDao.insert(stProizvods);
@@ -92,8 +97,20 @@ class RacunDao {
             console.error(error);
             throw error;
         }
-        return racun;
+        return invoice;
+    }
+
+    async update(invoice: Invoice): Promise<Invoice> {
+        const {data, error} = await supabase.from('racuni').update({
+            kupac_id: invoice.kupac_id,
+            datum: invoice.datum,
+            datum_valute: invoice.datum_valute,
+            iznos: invoice.iznos,
+            popust: invoice.popust,
+            za_uplatu: invoice.za_uplatu,
+            saldo: 0 // TODO
+        }).eq('id', invoice.id)
     }
 }
 
-export default new RacunDao();
+export default new InvoiceDao();

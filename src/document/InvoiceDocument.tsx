@@ -1,17 +1,17 @@
-import Racun from "../data/Racun";
+import Invoice from "../data/Invoice.ts";
 import Kupac from "../data/Kupac";
 import Proizvod from "../data/Proizvod";
 import './RacunDocument.css';
 import logo from '../logo.png';
 import ScopedCssBaseline from "@mui/material/ScopedCssBaseline";
 
-interface RacunDocumentProps {
-    data: {racun: Racun, kupac: Kupac, proizvods: Proizvod[]}
+interface InvoiceDocumentProps {
+    data: {invoice: Invoice, kupac: Kupac, proizvods: Proizvod[]}
 }
 
-export default function RacunDocument({data: {racun, kupac, proizvods}}: RacunDocumentProps) {
+export default function InvoiceDocument({data: {invoice, kupac, proizvods}}: InvoiceDocumentProps) {
     const format = new Intl.DateTimeFormat('sr-RS', {year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC'})
-    const racunNumber = `${racun.rb}/${racun.datum.getFullYear() % 100}`
+    const invoiceNumber = `${invoice.rb}/${invoice.datum.getFullYear() % 100}`
 
     return <ScopedCssBaseline>
         <div style={{margin: '5% 7%', fontSize: '0.8em'}}>
@@ -69,7 +69,7 @@ export default function RacunDocument({data: {racun, kupac, proizvods}}: RacunDo
                     </p>
                 </div>
             </div>
-            <h2 style={{textAlign: 'center', marginTop: '2%'}}>RAČUN-OTPREMNICA br. {racunNumber}</h2>
+            <h2 style={{textAlign: 'center', marginTop: '2%'}}>RAČUN-OTPREMNICA br. {invoiceNumber}</h2>
 
             <table className='main-table'>
                 <tbody>
@@ -83,7 +83,7 @@ export default function RacunDocument({data: {racun, kupac, proizvods}}: RacunDo
                     <th>Osnovica</th>
                     <th>Vrednost</th>
                 </tr>
-                {racun.stproizvodi?.map((stProizvod, index) => {
+                {invoice.stproizvodi?.map((stProizvod, index) => {
                     const proizvod = proizvods.find(p => p.id === stProizvod.proizvod_id);
                     const vrednost = stProizvod.cena * stProizvod.kolicina;
                     const osnovica = vrednost * (1 - stProizvod.rabat);
@@ -108,15 +108,15 @@ export default function RacunDocument({data: {racun, kupac, proizvods}}: RacunDo
                     <tbody>
                     <tr>
                         <td>Datum prometa:</td>
-                        <td>{format.format(racun.datum)}</td>
+                        <td>{format.format(invoice.datum)}</td>
                     </tr>
                     <tr>
                         <td>Datum računa:</td>
-                        <td>{format.format(racun.datum)}</td>
+                        <td>{format.format(invoice.datum)}</td>
                     </tr>
                     <tr>
                         <td>Datum valute:</td>
-                        <td>{format.format(racun.datum_valute)}</td>
+                        <td>{format.format(invoice.datum_valute)}</td>
                     </tr>
                     <tr>
                         <td>Mesto prometa:</td>
@@ -129,27 +129,27 @@ export default function RacunDocument({data: {racun, kupac, proizvods}}: RacunDo
                         <tbody>
                         <tr>
                             <td style={{width: 150}}>Prodajna vrednost:</td>
-                            <td style={{textAlign: 'end'}}>{racun.iznos.toFixed(2)}</td>
+                            <td style={{textAlign: 'end'}}>{invoice.iznos.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td>Odobreni rabat:</td>
-                            <td style={{textAlign: 'end'}}>{racun.popust.toFixed(2)}</td>
+                            <td style={{textAlign: 'end'}}>{invoice.popust.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td>Ukupna vrednost:</td>
-                            <td style={{textAlign: 'end'}}>{racun.za_uplatu.toFixed(2)}</td>
+                            <td style={{textAlign: 'end'}}>{invoice.za_uplatu.toFixed(2)}</td>
                         </tr>
                         <tr style={{border: '1px solid black'}}>
                             <td>Ukupno:</td>
-                            <td style={{textAlign: 'end'}}>{racun.za_uplatu.toFixed(2)}</td>
+                            <td style={{textAlign: 'end'}}>{invoice.za_uplatu.toFixed(2)}</td>
                         </tr>
                         </tbody>
                     </table>
-                    <p style={{width: '100%'}}>Slovima: {serbianString(racun.za_uplatu)}</p>
+                    <p style={{width: '100%'}}>Slovima: {serbianString(invoice.za_uplatu)}</p>
                 </div>
             </div>
             <p style={{marginTop: '5%'}}>Uplatu izvršiti sa pozivom na broj: <span
-                style={{fontWeight: 'bold'}}>97 {racunNumber}</span></p>
+                style={{fontWeight: 'bold'}}>97 {invoiceNumber}</span></p>
 
             <table style={{marginTop: '4%'}}>
                 <tbody>

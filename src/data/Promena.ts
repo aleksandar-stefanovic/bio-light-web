@@ -1,5 +1,5 @@
-import Racun from './Racun';
+import Invoice from './Invoice.ts';
 import Uplata from './Uplata';
 
-type Promena = Racun | Uplata;
+type Promena = Invoice | Uplata;
 export default Promena;

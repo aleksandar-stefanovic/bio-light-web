@@ -1,4 +1,4 @@
-import Racun from './Racun';
+import Invoice from './Invoice.ts';
 import Uplata from './Uplata';
 
 export type KupacId = number;
@@ -16,7 +16,7 @@ export default interface Kupac {
   otpremljeno_naziv: string;
   otpremljeno_ulica: string;
   otpremljeno_mesto?: string;
-  racuni: Racun[];
+  invoices: Invoice[];
   uplate: Uplata[];
   stanje: number;
 }
