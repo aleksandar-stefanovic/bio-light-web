@@ -1,17 +1,18 @@
-import StProizvod from './StProizvod';
-import {KupacId} from './Kupac';
+import LineItem from './LineItem.ts';
+import {CustomerId} from './Customer.ts';
 
 export type InvoiceId = number;
 
 export default interface Invoice {
   id: InvoiceId;
-  rb: string;
-  kupac_id: KupacId;
-  datum: Date;
-  datum_valute: Date;
-  stproizvodi: StProizvod[];
-  iznos: number;
-  popust: number;
-  za_uplatu: number;
-  saldo: number;
+  ref_no: string;
+  customer_id: CustomerId;
+  date: Date;
+  date_due: Date;
+  /** @deprecated */
+  lineItems: LineItem[];
+  amount_before_discount: number;
+  discount: number;
+  amount: number;
+  balance: number;
 }

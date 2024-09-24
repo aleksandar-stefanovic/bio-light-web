@@ -1,15 +1,15 @@
 import {Button} from '@mui/material';
-import React, {ChangeEvent} from 'react';
-import Kupac from '../data/Kupac';
+import React, {ChangeEvent, CSSProperties} from 'react';
+import Customer from '../data/Customer.ts';
 
 interface UnosPodatakaProps {
   visible: boolean;
-  style: any;
+  style: CSSProperties;
 }
 
 export default function UnosPodataka({visible, style}: UnosPodatakaProps) {
 
-  const [kupci, setKupci] = React.useState<Kupac[]>([]);
+  const [kupci, setKupci] = React.useState<Customer[]>([]);
 
   function handleKupacSelection(e: ChangeEvent<HTMLInputElement>) {
     const fileReader: FileReader = new FileReader();
@@ -17,7 +17,7 @@ export default function UnosPodataka({visible, style}: UnosPodatakaProps) {
     if (blob) {
       fileReader.readAsText(blob, 'UTF-8');
       fileReader.onload = (e) => {
-        const kupacs: Kupac[] = JSON.parse(e?.target?.result as string);
+        const kupacs: Customer[] = JSON.parse(e?.target?.result as string);
         setKupci(kupacs)
       }
     }

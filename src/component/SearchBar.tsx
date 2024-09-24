@@ -20,8 +20,10 @@ export default function SearchBar({onSearchTerm, style}: SearchBarProps) {
                     value={searchTerm}
                     style={style}
                     onChange={e => setSearchTerm(e.target.value)}
-                    InputProps={{
-                      startAdornment: <InputAdornment position='start'><Search></Search></InputAdornment>
+                    slotProps={{
+                        input: {
+                            startAdornment: <InputAdornment position='start'><Search></Search></InputAdornment>
+                        }
                     }}
   placeholder='Pretraga'></TextField>
 }

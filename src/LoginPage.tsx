@@ -1,9 +1,7 @@
-import {Button, TextField, Typography, CircularProgress} from '@mui/material';
-import {useGlobalState} from './GlobalStateProvider';
-import React, {useEffect, useState} from 'react';
+import {Button, CircularProgress, TextField, Typography} from '@mui/material';
 import {signIn} from './user/Auth';
-import type {Session, User} from '@supabase/supabase-js';
-import supabase from './supabase/client';
+import type {User} from '@supabase/supabase-js';
+import {useState} from 'react';
 
 interface LogicPageProps {
   user?: User|null;
@@ -11,10 +9,8 @@ interface LogicPageProps {
 }
 
 export default function LoginPage({user, onSetUser}: LogicPageProps) {
-  const [globalState, setGlobalState] = useGlobalState();
-
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   async function login() {
     const {data: {user}, error} = await signIn(email, password);
@@ -25,7 +21,7 @@ export default function LoginPage({user, onSetUser}: LogicPageProps) {
     }
   }
 
-  async function reactOnEnter(event: any) {
+  async function reactOnEnter(event: {keyCode: number}) {
     if (event.keyCode === 13) {
       await login();
     }

@@ -9,41 +9,43 @@ import {
   ListItemButton,
   ListItemText
 } from '@mui/material';
-import Kupac from '../data/Kupac';
+import Customer from '../data/Customer.ts';
 import React from 'react';
 import SearchBar from "../component/SearchBar";
 import CloseIcon from '@mui/icons-material/Close';
+import {useRepository} from '../repository/Repository.tsx';
 
-export interface KupacDialogPickerProps {
+export interface CustomerDialogPickerProps {
   open: boolean;
-  onSelectKupac: (kupac: Kupac) => void;
+  onSelectCustomer: (customer: Customer) => void;
   onClose: () => void;
-  kupacs: Kupac[];
 }
 
-export default function KupacPickerDialog({open, onSelectKupac, onClose, kupacs}: KupacDialogPickerProps) {
+export default function CustomerPickerDialog({open, onSelectCustomer, onClose}: CustomerDialogPickerProps) {
+
+  const {customers} = useRepository();
 
   const [searchTerm, setSearchTerm] = React.useState<string>('');
 
   const searchTerms = searchTerm.trim().toLowerCase().split(/\s+/)
 
-  const filteredKupacs = kupacs.map(kupac => {
+  const filteredCustomers = customers.map(customer => {
     return {
-      kupac,
-      count: searchTerms.filter(searchTerm => kupac.ime.toLowerCase().includes(searchTerm)).length
+      customer: customer,
+      count: searchTerms.filter(searchTerm => customer.name.toLowerCase().includes(searchTerm)).length
     }
   })
     .filter(it => it.count > 0)
     .sort((a, b) => {
-      if (a.kupac.aktivan && !b.kupac.aktivan) {
+      if (a.customer.active && !b.customer.active) {
         return -1;
       }
-      if (!a.kupac.aktivan && b.kupac.aktivan) {
+      if (!a.customer.active && b.customer.active) {
         return 1;
       }
       return b.count - a.count;
     })
-    .map(({kupac}) => kupac)
+    .map(({customer}) => customer);
 
   return <Dialog open={open}
                  fullWidth
@@ -63,10 +65,10 @@ export default function KupacPickerDialog({open, onSelectKupac, onClose, kupacs}
     </DialogTitle>
     <DialogContent style={{height: '100%'}}>
       <List style={{height: '100%'}}>
-        {filteredKupacs.map(kupac =>
+        {filteredCustomers.map(kupac =>
             <ListItem key={kupac.id} disablePadding>
-              <ListItemButton onClick={() => onSelectKupac(kupac)} style={{opacity: kupac.aktivan ? 1 : 0.7}}>
-                <ListItemText>{kupac.ime}</ListItemText>
+              <ListItemButton onClick={() => onSelectCustomer(kupac)} style={{opacity: kupac.active ? 1 : 0.7}}>
+                <ListItemText>{kupac.name}</ListItemText>
               </ListItemButton>
             </ListItem>)
         }

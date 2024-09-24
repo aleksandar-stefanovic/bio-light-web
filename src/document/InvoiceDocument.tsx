@@ -1,17 +1,17 @@
 import Invoice from "../data/Invoice.ts";
-import Kupac from "../data/Kupac";
-import Proizvod from "../data/Proizvod";
+import Customer from "../data/Customer.ts";
+import Product from "../data/Product.ts";
 import './RacunDocument.css';
 import logo from '../logo.png';
 import ScopedCssBaseline from "@mui/material/ScopedCssBaseline";
 
 interface InvoiceDocumentProps {
-    data: {invoice: Invoice, kupac: Kupac, proizvods: Proizvod[]}
+    data: {invoice: Invoice, kupac: Customer, proizvods: Product[]}
 }
 
 export default function InvoiceDocument({data: {invoice, kupac, proizvods}}: InvoiceDocumentProps) {
     const format = new Intl.DateTimeFormat('sr-RS', {year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC'})
-    const invoiceNumber = `${invoice.rb}/${invoice.datum.getFullYear() % 100}`
+    const invoiceNumber = `${invoice.ref_no}/${invoice.date.getFullYear() % 100}`
 
     return <ScopedCssBaseline>
         <div style={{margin: '5% 7%', fontSize: '0.8em'}}>
@@ -36,22 +36,22 @@ export default function InvoiceDocument({data: {invoice, kupac, proizvods}}: Inv
                         fontWeight: 'bold',
                         fontSize: '1.2em',
                         textAlign: 'end'
-                    }}>{kupac.ime}</p>
-                    <p style={{textAlign: 'end'}}>Adresa: {kupac.adresa}</p>
-                    <p style={{textAlign: 'end'}}>PIB: {kupac.pib}</p>
-                    <p style={{textAlign: 'end'}}>MBR: {kupac.mbr}</p>
-                    <p style={{textAlign: 'end'}}>Račun: {kupac.tkr}</p>
+                    }}>{kupac.name}</p>
+                    <p style={{textAlign: 'end'}}>Adresa: {kupac.address}</p>
+                    <p style={{textAlign: 'end'}}>PIB: {kupac.tin}</p>
+                    <p style={{textAlign: 'end'}}>MBR: {kupac.id_no}</p>
+                    <p style={{textAlign: 'end'}}>Račun: {kupac.account_no}</p>
                 </div>
             </div>
             <div style={{display: 'flex', justifyContent: 'space-between'}}>
                 <div>
                     <p style={{fontWeight: 'bold', marginLeft: '5%'}}>Otpremljeno na adresu:</p>
                     <p style={{border: '1px solid #aaaaaa', padding: '5%', width: 'max-content'}}>
-                        <span style={{fontWeight: 'bold'}}>{kupac.otpremljeno_naziv}</span>
+                        <span style={{fontWeight: 'bold'}}>{kupac.delivery_name}</span>
                         <br/>
-                        <span>{kupac.otpremljeno_ulica}</span>
+                        <span>{kupac.delivery_street}</span>
 
-                        {kupac.otpremljeno_mesto && <><br/><span>{kupac.otpremljeno_mesto}</span></>}
+                        {kupac.delivery_city && <><br/><span>{kupac.delivery_city}</span></>}
                     </p>
                 </div>
                 <div>
@@ -83,20 +83,20 @@ export default function InvoiceDocument({data: {invoice, kupac, proizvods}}: Inv
                     <th>Osnovica</th>
                     <th>Vrednost</th>
                 </tr>
-                {invoice.stproizvodi?.map((stProizvod, index) => {
-                    const proizvod = proizvods.find(p => p.id === stProizvod.proizvod_id);
-                    const vrednost = stProizvod.cena * stProizvod.kolicina;
-                    const osnovica = vrednost * (1 - stProizvod.rabat);
+                {invoice.lineItems?.map((stProizvod, index) => {
+                    const proizvod = proizvods.find(p => p.id === stProizvod.product_id);
+                    const vrednost = stProizvod.price * stProizvod.count;
+                    const osnovica = vrednost * (1 - stProizvod.discount_perc);
                     if (!proizvod) {
                         throw Error('Greška u proizvodu')
                     }
                     return <tr key={index}>
-                        <td>{stProizvod.rinfuz ? proizvod.ean_rinfuz : proizvod.ean}</td>
-                        <td>{proizvod.ime} {stProizvod.rinfuz ? proizvod.nastavak_kg : proizvod.nastavak_kom}</td>
-                        <td>{stProizvod.kolicina}</td>
-                        <td>{stProizvod.rinfuz ? 'kg' : 'kom'}</td>
-                        <td>{stProizvod.cena.toFixed(2)}</td>
-                        <td>{stProizvod.rabat * 100}%</td>
+                        <td>{stProizvod.bulk ? proizvod.ean_kg : proizvod.ean}</td>
+                        <td>{proizvod.name} {stProizvod.bulk ? proizvod.suffix_kg : proizvod.suffix_piece}</td>
+                        <td>{stProizvod.count}</td>
+                        <td>{stProizvod.bulk ? 'kg' : 'kom'}</td>
+                        <td>{stProizvod.price.toFixed(2)}</td>
+                        <td>{stProizvod.discount_perc * 100}%</td>
                         <td>{osnovica.toFixed(2)}</td>
                         <td>{vrednost.toFixed(2)}</td>
                     </tr>;
@@ -108,15 +108,15 @@ export default function InvoiceDocument({data: {invoice, kupac, proizvods}}: Inv
                     <tbody>
                     <tr>
                         <td>Datum prometa:</td>
-                        <td>{format.format(invoice.datum)}</td>
+                        <td>{format.format(invoice.date)}</td>
                     </tr>
                     <tr>
                         <td>Datum računa:</td>
-                        <td>{format.format(invoice.datum)}</td>
+                        <td>{format.format(invoice.date)}</td>
                     </tr>
                     <tr>
                         <td>Datum valute:</td>
-                        <td>{format.format(invoice.datum_valute)}</td>
+                        <td>{format.format(invoice.date_due)}</td>
                     </tr>
                     <tr>
                         <td>Mesto prometa:</td>
@@ -129,23 +129,23 @@ export default function InvoiceDocument({data: {invoice, kupac, proizvods}}: Inv
                         <tbody>
                         <tr>
                             <td style={{width: 150}}>Prodajna vrednost:</td>
-                            <td style={{textAlign: 'end'}}>{invoice.iznos.toFixed(2)}</td>
+                            <td style={{textAlign: 'end'}}>{invoice.amount_before_discount.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td>Odobreni rabat:</td>
-                            <td style={{textAlign: 'end'}}>{invoice.popust.toFixed(2)}</td>
+                            <td style={{textAlign: 'end'}}>{invoice.discount.toFixed(2)}</td>
                         </tr>
                         <tr>
                             <td>Ukupna vrednost:</td>
-                            <td style={{textAlign: 'end'}}>{invoice.za_uplatu.toFixed(2)}</td>
+                            <td style={{textAlign: 'end'}}>{invoice.amount.toFixed(2)}</td>
                         </tr>
                         <tr style={{border: '1px solid black'}}>
                             <td>Ukupno:</td>
-                            <td style={{textAlign: 'end'}}>{invoice.za_uplatu.toFixed(2)}</td>
+                            <td style={{textAlign: 'end'}}>{invoice.amount.toFixed(2)}</td>
                         </tr>
                         </tbody>
                     </table>
-                    <p style={{width: '100%'}}>Slovima: {serbianString(invoice.za_uplatu)}</p>
+                    <p style={{width: '100%'}}>Slovima: {serbianString(invoice.amount)}</p>
                 </div>
             </div>
             <p style={{marginTop: '5%'}}>Uplatu izvršiti sa pozivom na broj: <span

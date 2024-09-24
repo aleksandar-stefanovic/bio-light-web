@@ -11,23 +11,22 @@ import {
     ThemeProvider,
     useMediaQuery
 } from '@mui/material';
-import TabIzrada from './tab/TabIzrada';
+import TabCreateInvoice from './tab/TabCreateInvoice.tsx';
 import {useGlobalState} from './GlobalStateProvider';
 import LoginPage from './LoginPage';
-import TabKupci from './tab/TabKupci';
+import TabCustomers from './tab/TabCustomers.tsx';
 import TabInvoices from './tab/TabInvoices.tsx';
 import Invoice from './data/Invoice.ts';
-import InvoiceDao from './data/supabase/RacunDao';
-import InvoiceDocument from "./document/InvoiceDocument.tsx";
-import Kupac from './data/Kupac';
-import * as KupacDao from './data/supabase/KupacDao';
+import InvoiceDocument from './document/InvoiceDocument.tsx';
+import Customer from './data/Customer.ts';
+import * as CustomerDao from './data/supabase/CustomerDao.ts';
 import {signOut as so} from './user/Auth';
 import supabase from './supabase/client';
 import {User} from '@supabase/supabase-js';
-import Proizvod from './data/Proizvod';
-import ProizvodDao from './data/supabase/ProizvodDao';
-import TabUplate from './tab/TabUplate.tsx';
-import {RepositoryProvider} from './repository/Repository.tsx';
+import Product from './data/Product.ts';
+import ProductDao from './data/supabase/ProductDao.ts';
+import TabPayments from './tab/TabPayments.tsx';
+import {RepositoryProvider, useRepository} from './repository/Repository.tsx';
 
 function App() {
     const [tabIndex, setTabIndex] = useState(0);
@@ -40,39 +39,16 @@ function App() {
 
     const [user, setUser] = useState<User | null>();
 
-    const [kupacs, setKupacs] = useState<Kupac[]>([]);
-    const [nextInvoiceNo, setNextInvoiceNo] = useState<string>('');
+    const [customers, setCustomers] = useState<Customer[]>([]);
 
-    const refetch = useCallback(async () => {
-        const [kupacs, nextInvoiceNo] = await Promise.all([KupacDao.getAll(), InvoiceDao.getNextInvoiceNo()]);
-        setKupacs(kupacs);
-        setNextInvoiceNo(nextInvoiceNo);
-    }, [setKupacs, setNextInvoiceNo]);
+    const {nextInvoiceRefNo} = useRepository();
 
     React.useEffect(() => {
-        void refetch();
-    }, [refetch]);
-
-    React.useEffect(() => {
-        const channel = supabase
-        .channel('schema-db-changes')
-        .on(
-            'postgres_changes',
-            {
-                event: '*',
-                schema: 'public',
-            },
-            async () => {
-                await refetch()
-            }
-        )
-        .subscribe()
-
-        return () => {
-            void channel.unsubscribe();
-        }
-
-    }, [refetch]);
+        // TODO move to Repository
+        CustomerDao.getAll().then(customers => {
+            setCustomers(customers);
+        });
+    }, [setCustomers]);
 
     useEffect(() => {
         if (user === undefined) {
@@ -92,20 +68,18 @@ function App() {
     }, [user, setUser]);
 
     const insertInvoice = useCallback(async (invoice: Invoice) => {
-        await InvoiceDao.insert(invoice);
-        await refetch();
-    }, [refetch]);
+        // TODO use Repository
+    }, []);
 
     const updateInvoice = useCallback(async(invoice: Invoice) => {
-        await InvoiceDao.update(invoice);
-        await refetch();
-    }, [refetch]);
+        // TODO use Repository
+    }, []);
 
-    const [proizvods, setProizvods] = React.useState<Proizvod[]>([]);
+    const [proizvods, setProizvods] = React.useState<Product[]>([]);
 
     React.useEffect(() => {
         (async () => {
-            setProizvods(await ProizvodDao.getAll());
+            setProizvods(await ProductDao.getAll());
         })();
     }, [setProizvods]);
 
@@ -153,35 +127,35 @@ function App() {
                             <div style={{flex: 1}}></div>
                             <Button onClick={signOut}>Odjavi&nbsp;se</Button>
                         </div>
-                        <TabIzrada visible={tabIndex === 0}
-                                   style={{flex: 1}}
-                                   showSnackbar={showSnackbar}
-                                   onInvoiceSave={insertInvoice}
-                                   nextInvoiceNo={nextInvoiceNo}
-                                   kupacs={kupacs}
-                                   theme={theme}
-                                   proizvods={proizvods}/>
-                        <TabKupci
+                        <TabCreateInvoice visible={tabIndex === 0}
+                                          style={{flex: 1}}
+                                          showSnackbar={showSnackbar}
+                                          onInvoiceSave={insertInvoice}
+                                          nextInvoiceNo={nextInvoiceRefNo}
+                                          kupacs={customers}
+                                          theme={theme}
+                                          proizvods={proizvods}/>
+                        <TabCustomers
                             visible={tabIndex === 1}
                             style={{flex: 1}}
                             showSnackbar={showSnackbar}
-                            kupacs={kupacs}
+                            kupacs={customers}
                             proizvods={proizvods}
                             theme={theme}
                         />
                         <TabInvoices
                             visible={tabIndex === 2}
                             style={{flex: 1}}
-                            kupacs={kupacs}
+                            kupacs={customers}
                             showSnackbar={showSnackbar}
                             theme={theme}
                             onInvoiceUpdate={updateInvoice}
                             proizvods={proizvods}/>
-                        <TabUplate visible={tabIndex === 3}
-                                   kupacs={kupacs}
-                                   style={{flex: 1}}
-                                   showSnackbar={showSnackbar}
-                                   theme={theme}
+                        <TabPayments visible={tabIndex === 3}
+                                     kupacs={customers}
+                                     style={{flex: 1}}
+                                     showSnackbar={showSnackbar}
+                                     theme={theme}
                         />
                         <Snackbar
                             open={snackbarState?.open}

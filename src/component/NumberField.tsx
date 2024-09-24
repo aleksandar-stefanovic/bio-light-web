@@ -35,8 +35,10 @@ export default function NumberField({label, size = 'medium', onChange, endAdornm
     size={size}
     value={value}
     disabled={disabled}
-    InputProps={endAdornment ? {
-      endAdornment: <InputAdornment position='end'>{endAdornment}</InputAdornment>
+    slotProps={endAdornment ? {
+      input: {
+        endAdornment: <InputAdornment position='end'>{endAdornment}</InputAdornment>
+      }
     } : undefined}
     onChange={handleChange}
     type='number'

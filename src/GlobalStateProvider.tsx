@@ -1,11 +1,11 @@
 import React, {Dispatch, useContext} from 'react';
 import Invoice from "./data/Invoice.ts";
-import Kupac from "./data/Kupac";
-import Proizvod from "./data/Proizvod";
+import Customer from "./data/Customer.ts";
+import Product from "./data/Product.ts";
 
 interface GlobalStateProps {
-    invoiceToPrint?: {invoice: Invoice, kupac: Kupac, proizvods: Proizvod[]},
-    proizvods?: Proizvod[]
+    invoiceToPrint?: {invoice: Invoice, customer: Customer, products: Product[]},
+    products?: Product[]
 }
 
 const globalStateContext = React.createContext<GlobalStateProps>({});
@@ -27,6 +27,7 @@ export const GlobalStateProvider = ({children}: { children: JSX.Element }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useGlobalState(): [GlobalStateProps, React.Dispatch<GlobalStateProps>] {
     return [useContext(globalStateContext), useContext(dispatchStateContext)];
 }
