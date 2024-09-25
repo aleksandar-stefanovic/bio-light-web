@@ -4,7 +4,7 @@ import Customer from "./data/Customer.ts";
 import Product from "./data/Product.ts";
 
 interface GlobalStateProps {
-    invoiceToPrint?: {invoice: Invoice, customer: Customer, products: Product[]},
+    invoiceToPrint?: {invoice: Invoice, customer: Customer},
     products?: Product[]
 }
 

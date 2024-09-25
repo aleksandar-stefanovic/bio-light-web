@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import './App.css';
 import {
     Alert,
@@ -18,13 +18,9 @@ import TabCustomers from './tab/TabCustomers.tsx';
 import TabInvoices from './tab/TabInvoices.tsx';
 import Invoice from './data/Invoice.ts';
 import InvoiceDocument from './document/InvoiceDocument.tsx';
-import Customer from './data/Customer.ts';
-import * as CustomerDao from './data/supabase/CustomerDao.ts';
 import {signOut as so} from './user/Auth';
 import supabase from './supabase/client';
 import {User} from '@supabase/supabase-js';
-import Product from './data/Product.ts';
-import ProductDao from './data/supabase/ProductDao.ts';
 import TabPayments from './tab/TabPayments.tsx';
 import {RepositoryProvider, useRepository} from './repository/Repository.tsx';
 
@@ -39,16 +35,7 @@ function App() {
 
     const [user, setUser] = useState<User | null>();
 
-    const [customers, setCustomers] = useState<Customer[]>([]);
-
     const {nextInvoiceRefNo} = useRepository();
-
-    React.useEffect(() => {
-        // TODO move to Repository
-        CustomerDao.getAll().then(customers => {
-            setCustomers(customers);
-        });
-    }, [setCustomers]);
 
     useEffect(() => {
         if (user === undefined) {
@@ -74,15 +61,6 @@ function App() {
     const updateInvoice = useCallback(async(invoice: Invoice) => {
         // TODO use Repository
     }, []);
-
-    const [proizvods, setProizvods] = React.useState<Product[]>([]);
-
-    React.useEffect(() => {
-        (async () => {
-            setProizvods(await ProductDao.getAll());
-        })();
-    }, [setProizvods]);
-
 
     const showSnackbar = useCallback((type: 'success' | 'warning' | 'info' | 'error' = 'info', message: string) => {
         setSnackbarState({
@@ -132,27 +110,22 @@ function App() {
                                           showSnackbar={showSnackbar}
                                           onInvoiceSave={insertInvoice}
                                           nextInvoiceNo={nextInvoiceRefNo}
-                                          kupacs={customers}
                                           theme={theme}
-                                          proizvods={proizvods}/>
+                        />
                         <TabCustomers
                             visible={tabIndex === 1}
                             style={{flex: 1}}
                             showSnackbar={showSnackbar}
-                            kupacs={customers}
-                            proizvods={proizvods}
                             theme={theme}
                         />
                         <TabInvoices
                             visible={tabIndex === 2}
                             style={{flex: 1}}
-                            kupacs={customers}
                             showSnackbar={showSnackbar}
                             theme={theme}
                             onInvoiceUpdate={updateInvoice}
-                            proizvods={proizvods}/>
+                        />
                         <TabPayments visible={tabIndex === 3}
-                                     kupacs={customers}
                                      style={{flex: 1}}
                                      showSnackbar={showSnackbar}
                                      theme={theme}

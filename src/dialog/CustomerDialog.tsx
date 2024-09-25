@@ -135,7 +135,7 @@ export default function CustomerDialog({open, customer, onClose}: KupacDialogPro
                 <DataGrid
                     columns={pricingColumns}
                     rows={prices}
-                    getRowId={row => row.proizvod_id}
+                    getRowId={row => row.product_id}
                     hideFooter
                 />
             </div>

@@ -4,7 +4,7 @@ import {DatePicker} from '@mui/x-date-pickers';
 import CloseIcon from '@mui/icons-material/Close';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import CustomerPickerDialog from '../dialog/CustomerPickerDialog.tsx';
-import ProizvodInput from '../component/ProizvodInput';
+import ProductInput from '../component/ProductInput.tsx';
 import TabProps from './TabProps';
 import LineItem from '../data/LineItem.ts';
 import Invoice from '../data/Invoice.ts';
@@ -29,7 +29,7 @@ interface TabCreateInvoiceProps extends TabProps {
 export default function TabCreateInvoice({style, visible, showSnackbar, nextInvoiceNo, onInvoiceSave, existingInvoice}: TabCreateInvoiceProps) {
     const [, setGlobalState] = useGlobalState();
 
-    const {customers, products} = useRepository();
+    const {customers} = useRepository();
 
     const [lineItems, setLineItems] = useState<LineItem[]>([]);
     const amount_before_discount = _.sum(lineItems.map(p => p.price * p.count));
@@ -52,13 +52,13 @@ export default function TabCreateInvoice({style, visible, showSnackbar, nextInvo
         });
     }, [setLineItems]);
 
-    const columns: GridColDef[] = useMemo(() => [
+    const lineItemColumns: GridColDef[] = useMemo(() => [
         {field: 'order_no', headerName: 'RB', width: 50},
         {field: 'name', headerName: 'Naziv', flex: 1,},
         {field: 'count', headerName: 'Količina', width: 100},
         {field: 'unit', headerName: 'JM', width: 50},
         {field: 'price', headerName: 'Cena', width: 100, valueGetter: value => Number(value).toFixed(2)},
-        {field: 'discount', headerName: 'Rabat', width: 100, valueGetter: (value) => (value * 100) + '%'},
+        {field: 'discount_perc', headerName: 'Rabat', width: 100, valueGetter: (value) => value + '%'},
         {field: 'amount', headerName: 'Osnovica', width: 100, valueGetter: value => Number(value).toFixed(2)},
         {field: 'amount_before_discount', headerName: 'Vrednost', width: 100, valueGetter: value => Number(value).toFixed(2)},
         {
@@ -139,7 +139,7 @@ export default function TabCreateInvoice({style, visible, showSnackbar, nextInvo
                 amount: amount,
                 balance: customer.balance + amount // This only works for new invoices, the logic works differently for edited ones
             };
-            setGlobalState({invoiceToPrint: {invoice, customer, products}});
+            setGlobalState({invoiceToPrint: {invoice, customer}});
             setTimeout(async () => {
                 try {
                     await onInvoiceSave(invoice);
@@ -153,19 +153,21 @@ export default function TabCreateInvoice({style, visible, showSnackbar, nextInvo
                 }
             }, 500);
         }
-    }, [customer, existingInvoice?.id, existingInvoice?.ref_no, invoiceDate, dateDue, nextInvoiceNo, lineItems, amount_before_discount, discount, amount, setGlobalState, products, onInvoiceSave, showSnackbar, cleanup]);
+    }, [customer, existingInvoice?.id, existingInvoice?.ref_no, invoiceDate, dateDue, nextInvoiceNo, lineItems, amount_before_discount, discount, amount, setGlobalState, onInvoiceSave, showSnackbar, cleanup]);
 
     return <div style={{...style, display: visible ? 'flex' : 'none', flexDirection: 'row', height: '100%'}}>
         <div style={{flex: 1, display: 'flex', flexDirection: 'column', height: '100%'}}>
-            <ProizvodInput
+            <ProductInput
                 onAdd={onLineItemAdd}
                 onError={(message) => showSnackbar('error', message)}
                 disabled={!customer}
-                proizvods={products}
-                cenas={customerPrices}/>
+                customerPrices={customerPrices}/>
             <div style={{flexGrow: 1, minHeight: 50}}>
-                <DataGrid rows={lineItems} columns={columns} hideFooter
-                          getRowId={(stProizvod) => stProizvod?.na_spisku || 0}/>
+                <DataGrid
+                    rows={lineItems}
+                    columns={lineItemColumns}
+                    hideFooter
+                    getRowId={(lineItem) => lineItem.order_no}/>
             </div>
         </div>
         <div style={{display: 'flex', flexDirection: 'column', gap: 10, padding: 10}}>
@@ -173,8 +175,7 @@ export default function TabCreateInvoice({style, visible, showSnackbar, nextInvo
             <Button variant='outlined' onClick={() => setCustomerDialogPickerOpen(true)}>Izaberi kupca</Button>
             <CustomerPickerDialog open={customerPickerDialogOpen}
                                   onSelectCustomer={onSelectCustomer}
-                                  onClose={() => setCustomerDialogPickerOpen(false)}
-                                  kupacs={customers}/>
+                                  onClose={() => setCustomerDialogPickerOpen(false)} />
             <TextField label='Kupac' value={customer?.name || ''}/>
             <TextField label='Broj računa' value={nextInvoiceNo} slotProps={{htmlInput: {readOnly: true}}}/>
             <DatePicker

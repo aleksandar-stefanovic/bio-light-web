@@ -1,15 +1,15 @@
 import Invoice from "../data/Invoice.ts";
 import Customer from "../data/Customer.ts";
-import Product from "../data/Product.ts";
 import './RacunDocument.css';
 import logo from '../logo.png';
 import ScopedCssBaseline from "@mui/material/ScopedCssBaseline";
 
 interface InvoiceDocumentProps {
-    data: {invoice: Invoice, kupac: Customer, proizvods: Product[]}
+    data: {invoice: Invoice, customer: Customer}
 }
 
-export default function InvoiceDocument({data: {invoice, kupac, proizvods}}: InvoiceDocumentProps) {
+export default function InvoiceDocument({data: {invoice, customer}}: InvoiceDocumentProps) {
+
     const format = new Intl.DateTimeFormat('sr-RS', {year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC'})
     const invoiceNumber = `${invoice.ref_no}/${invoice.date.getFullYear() % 100}`
 
@@ -36,22 +36,22 @@ export default function InvoiceDocument({data: {invoice, kupac, proizvods}}: Inv
                         fontWeight: 'bold',
                         fontSize: '1.2em',
                         textAlign: 'end'
-                    }}>{kupac.name}</p>
-                    <p style={{textAlign: 'end'}}>Adresa: {kupac.address}</p>
-                    <p style={{textAlign: 'end'}}>PIB: {kupac.tin}</p>
-                    <p style={{textAlign: 'end'}}>MBR: {kupac.id_no}</p>
-                    <p style={{textAlign: 'end'}}>Račun: {kupac.account_no}</p>
+                    }}>{customer.name}</p>
+                    <p style={{textAlign: 'end'}}>Adresa: {customer.address}</p>
+                    <p style={{textAlign: 'end'}}>PIB: {customer.tin}</p>
+                    <p style={{textAlign: 'end'}}>MBR: {customer.id_no}</p>
+                    <p style={{textAlign: 'end'}}>Račun: {customer.account_no}</p>
                 </div>
             </div>
             <div style={{display: 'flex', justifyContent: 'space-between'}}>
                 <div>
                     <p style={{fontWeight: 'bold', marginLeft: '5%'}}>Otpremljeno na adresu:</p>
                     <p style={{border: '1px solid #aaaaaa', padding: '5%', width: 'max-content'}}>
-                        <span style={{fontWeight: 'bold'}}>{kupac.delivery_name}</span>
+                        <span style={{fontWeight: 'bold'}}>{customer.delivery_name}</span>
                         <br/>
-                        <span>{kupac.delivery_street}</span>
+                        <span>{customer.delivery_street}</span>
 
-                        {kupac.delivery_city && <><br/><span>{kupac.delivery_city}</span></>}
+                        {customer.delivery_city && <><br/><span>{customer.delivery_city}</span></>}
                     </p>
                 </div>
                 <div>
@@ -83,22 +83,16 @@ export default function InvoiceDocument({data: {invoice, kupac, proizvods}}: Inv
                     <th>Osnovica</th>
                     <th>Vrednost</th>
                 </tr>
-                {invoice.lineItems?.map((stProizvod, index) => {
-                    const proizvod = proizvods.find(p => p.id === stProizvod.product_id);
-                    const vrednost = stProizvod.price * stProizvod.count;
-                    const osnovica = vrednost * (1 - stProizvod.discount_perc);
-                    if (!proizvod) {
-                        throw Error('Greška u proizvodu')
-                    }
+                {invoice.lineItems?.map((lineItem, index) => {
                     return <tr key={index}>
-                        <td>{stProizvod.bulk ? proizvod.ean_kg : proizvod.ean}</td>
-                        <td>{proizvod.name} {stProizvod.bulk ? proizvod.suffix_kg : proizvod.suffix_piece}</td>
-                        <td>{stProizvod.count}</td>
-                        <td>{stProizvod.bulk ? 'kg' : 'kom'}</td>
-                        <td>{stProizvod.price.toFixed(2)}</td>
-                        <td>{stProizvod.discount_perc * 100}%</td>
-                        <td>{osnovica.toFixed(2)}</td>
-                        <td>{vrednost.toFixed(2)}</td>
+                        <td>{lineItem.ean}</td>
+                        <td>{lineItem.name}</td>
+                        <td>{lineItem.count}</td>
+                        <td>{lineItem.bulk ? 'kg' : 'kom'}</td>
+                        <td>{lineItem.price.toFixed(2)}</td>
+                        <td>{lineItem.discount_perc}%</td>
+                        <td>{lineItem.amount.toFixed(2)}</td>
+                        <td>{lineItem.amount_before_discount.toFixed(2)}</td>
                     </tr>;
                 })}
                 </tbody>

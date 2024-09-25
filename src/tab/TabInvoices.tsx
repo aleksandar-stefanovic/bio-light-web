@@ -23,7 +23,7 @@ export default function TabInvoices({onInvoiceUpdate, visible, style, showSnackb
 
     const invoiceColumns: GridColDef[] = [
         {field: 'ref_no', headerName: 'RB', width: 70},
-        {field: 'kupac_id', headerName: 'Kupac', flex: 1, valueGetter: (value) => customers.find(customer => customer.id === value)?.name ?? 'GREŠKA'},
+        {field: 'customer_id', headerName: 'Kupac', flex: 1, valueGetter: (value) => customers.find(customer => customer.id === value)?.name ?? 'GREŠKA'},
         {field: 'date', headerName: 'Datum', width: 100, valueGetter: (value) => dayjs(value).format('DD.MM.YYYY.')},
         {field: 'date_due', headerName: 'Datum valute', width: 100, valueGetter: (value) => dayjs(value).format('DD.MM.YYYY.')},
         {field: 'amount_before_discount', headerName: 'Iznos', width: 100, valueGetter: value => Number(value).toFixed(2)},

@@ -6,7 +6,7 @@ export default interface LineItem {
   discount_perc: number;
   amount: number;
   bulk: boolean;
-  ean: string;
+  ean?: string;
   name: string;
   unit: string;
   amount_before_discount: number;
