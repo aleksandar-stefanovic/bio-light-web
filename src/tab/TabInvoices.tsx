@@ -19,7 +19,7 @@ interface TabInvoicesProps extends TabProps {
 
 export default function TabInvoices({onInvoiceUpdate, visible, style, showSnackbar, theme}: TabInvoicesProps) {
 
-    const {customers, products} = useRepository();
+    const {customers} = useRepository();
 
     const invoiceColumns: GridColDef[] = [
         {field: 'ref_no', headerName: 'RB', width: 70},
@@ -33,7 +33,7 @@ export default function TabInvoices({onInvoiceUpdate, visible, style, showSnackb
 
     const lineItemColumns: GridColDef[] = [
         {field: 'order_no', headerName: 'RB'},
-        {field: 'product_id', headerName: 'Proizvod', flex: 1, valueGetter: (value) => products.find(product => product.id === value)?.name ?? 'GREŠKA'},
+        {field: 'name', headerName: 'Proizvod', flex: 1},
         {field: 'count', headerName: 'Količina'},
         {field: 'discount_perc', headerName: 'Rabat', valueGetter: (value) => value + '%'},
         {field: 'price', headerName: 'Cena'},
@@ -80,12 +80,12 @@ export default function TabInvoices({onInvoiceUpdate, visible, style, showSnackb
     const print = useCallback(() => {
         if (selectedInvoice) {
             const customer = customers.find(customer => customer.id === selectedInvoice.customer_id)!;
-            setGlobalState({invoiceToPrint: {invoice: selectedInvoice, customer, products}});
+            setGlobalState({invoiceToPrint: {invoice: selectedInvoice, customer}});
             setTimeout(async () => {
                 window.print();
             }, 500);
         }
-    }, [customers, products, selectedInvoice, setGlobalState]);
+    }, [customers, selectedInvoice, setGlobalState]);
 
     const edit = useCallback(() => {
         if (selectedInvoice) {

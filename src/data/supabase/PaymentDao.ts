@@ -2,7 +2,7 @@ import supabase from '../../supabase/client';
 import Payment from '../Payment.ts';
 
 export async function getAll(): Promise<Payment[]> {
-    const {data, error} = await supabase.from('payments').select('*');
+    const {data, error} = await supabase.from('payments').select('*').order('id', {ascending: false});
     if (error) {
         throw error;
     }

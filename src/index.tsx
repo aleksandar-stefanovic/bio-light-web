@@ -5,6 +5,13 @@ import {LocalizationProvider} from '@mui/x-date-pickers';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {GlobalStateProvider} from './GlobalStateProvider';
 import App from './App.tsx';
+import dayjs from 'dayjs';
+import 'dayjs/locale/sr.js';
+import localeData from 'dayjs/plugin/localeData';
+
+dayjs.extend(localeData);
+dayjs.locale('sr')
+
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

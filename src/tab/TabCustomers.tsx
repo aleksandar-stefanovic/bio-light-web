@@ -23,7 +23,7 @@ export default function TabCustomers({visible, style, theme}: TabProps) {
     useEffect(() => {
         if (selectedCustomer) {
             // TODO this functionality should go through the Repository
-            CustomerDao.getAllTransactions(selectedCustomer.id!).then(transactions => setTransactions(transactions));
+            CustomerDao.getAllTransactions(selectedCustomer.id).then(transactions => setTransactions(transactions));
         }
     }, [selectedCustomer]);
 
