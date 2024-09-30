@@ -6,19 +6,27 @@ import dayjs from 'dayjs';
 import PaymentDialog, {PaymentDialogProps} from '../dialog/PaymentDialog.tsx';
 import {useRepository} from '../repository/Repository.tsx';
 import Payment from '../data/Payment.ts';
+import {CustomerId} from '../data/Customer.ts';
 
 export default function TabPayments({visible, style}: TabProps) {
 
-    const {customers, payments} = useRepository();
+    const {customers, payments, insertPayment, updatePayment} = useRepository();
 
-    const closePaymentDialog = useCallback((confirmed: boolean, intent: 'create'|'edit', payment?: Payment) => {
-        // TODO save the payment
-        console.log(payment);
+    const closePaymentDialog = useCallback((confirmed: boolean, intent: 'create'|'edit', payment?: Payment, previousCustomerId?: CustomerId) => {
+        if (confirmed && payment) {
+            if (intent === 'create') {
+                void insertPayment(payment);
+            } else {
+                if (previousCustomerId) {
+                    void updatePayment(payment, previousCustomerId);
+                }
+            }
+        }
         setPaymentDialogProps(prevState => ({
             ...prevState,
             open: false
-        }))
-    }, []);
+        }));
+    }, [insertPayment, updatePayment]);
 
     const [paymentDialogProps, setPaymentDialogProps] = useState<PaymentDialogProps>({
         open: false,
@@ -64,7 +72,8 @@ export default function TabPayments({visible, style}: TabProps) {
             valueGetter: value => dayjs(value).format('DD.MM.YYYY.'),
             align: 'right'
         },
-        {field: 'amount', headerName: 'Iznos', valueGetter: value => Number(value).toFixed(2), align: 'right', headerAlign: 'right'}
+        {field: 'amount', headerName: 'Iznos', valueGetter: value => Number(value).toFixed(2), align: 'right', headerAlign: 'right'},
+        {field: 'balance', headerName: 'Saldo', valueGetter: value => Number(value).toFixed(2), align: 'right', headerAlign: 'right'}
     ], [customers]);
 
     return <div style={{...style, display: visible ? 'flex' : 'none', flexDirection: 'row', height: 1}}>

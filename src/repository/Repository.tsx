@@ -17,6 +17,8 @@ interface RepositoryProps {
     nextInvoiceRefNo: string;
     customers: Customer[];
     products: Product[];
+    insertPayment: (payment: Payment) => Promise<void>;
+    updatePayment: (payment: Payment, previousCustomerId?: CustomerId) => Promise<void>;
 }
 
 const RepositoryContext = createContext<RepositoryProps>({
@@ -26,7 +28,9 @@ const RepositoryContext = createContext<RepositoryProps>({
     recalculateBalance: async() => { throw Error() },
     nextInvoiceRefNo: '',
     products: [],
-    customers: []
+    customers: [],
+    insertPayment: () => { return Promise.resolve(); },
+    updatePayment: () => { return Promise.resolve(); }
 });
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -101,66 +105,76 @@ export function RepositoryProvider({children}: {children: ReactNode}) {
     }, [invoices]);
 
     const recalculateBalance = useCallback(async(customerId: CustomerId) => {
-
-        // Form a timeline of all the transactions. In case both payment and an invoice happened in the same day,
-        // a payment should be ordered first (so that, ideally, balance returns to zero), and then the following
-        // invoice can be taken into account.
-        const transactions = [
-            ...invoices,
-            ...payments
-        ]
-        .filter(transaction => transaction.customer_id === customerId)
-        .sort((a, b) => {
-            if (a.date < b.date) {
-                return -1;
-            } else if (a.date > b.date) {
-                return 1;
-            } else if ('za_uplatu' in a) {
-                return -1;
-            } else {
-                return 1;
-            }
-        });
+        const transactions = await CustomerDao.getAllTransactions(customerId);
 
         let balance = 0;
-        const transactionsToUpdate: {id: number, balance: number, type: 'invoice'|'payment'}[] = [];
 
-        transactions.forEach(transaction => {
+        // Await in for-loop, but that's okay, as there won't be many records updated on average
+        for (const transaction of transactions) {
             if ('date_due' in transaction) {
                 balance += transaction.amount;
                 if (transaction.balance != balance) {
-                    transaction.balance = balance;
-                    transactionsToUpdate.push({id: transaction.id, balance: balance, type: 'invoice'});
+                    await InvoiceDao.updateOne({id: transaction.id, balance: balance});
                 }
             } else {
                 balance -= transaction.amount;
                 if (transaction.balance != balance) {
-                    transaction.balance = balance;
-                    transactionsToUpdate.push({id: transaction.id, balance: balance, type: 'payment'});
+                    await PaymentDao.updateOne({id: transaction.id, balance: balance});
                 }
             }
+        }
+
+        await CustomerDao.updateOne({id: customerId, balance});
+
+        setCustomers(customers => {
+            return customers.map(customer => {
+                if (customer.id === customerId) {
+                    return {...customer, balance};
+                } else {
+                    return customer;
+                }
+            });
         });
 
-        console.log(`Transactions changed: ${transactionsToUpdate.length}`);
-
-        // TODO
-
-    }, [invoices, payments]);
+        // This is very inefficient, improve at some point
+        await fetchInvoices();
+        await fetchPayments();
+    }, [fetchInvoices, fetchPayments]);
 
     const insertInvoice = useCallback(async(invoice: Invoice) => {
-        const storedInvoice = await InvoiceDao.insert(invoice);
+        const storedInvoice = await InvoiceDao.insertOne(invoice);
         const lineItems = invoice.lineItems;
         lineItems.forEach(lineItem => {
             lineItem.invoice_no = storedInvoice.id;
         });
         await LineItemDao.insert(lineItems);
 
-        setInvoices(prevState => [storedInvoice, ...prevState]);
+        const newInvoices = [storedInvoice, ...invoices];
+
+        setInvoices(newInvoices);
 
         await recalculateBalance(invoice.customer_id);
 
         return storedInvoice;
+    }, [invoices, recalculateBalance]);
+
+    const insertPayment = useCallback(async(payment: Payment) => {
+        await PaymentDao.insertOne(payment);
+        const newPayments = [payment, ...payments];
+        setPayments(newPayments);
+        await recalculateBalance(payment.customer_id);
+    }, [payments, recalculateBalance]);
+
+    const updatePayment = useCallback(async(payment: Payment, previousCustomerId?: CustomerId) => {
+        await PaymentDao.updateOne(payment);
+        await recalculateBalance(payment.customer_id);
+
+        // Editing the payment allows for changing the customer, so the previous customer should be tracked to correctly update the balance
+        if (previousCustomerId && previousCustomerId !== payment.customer_id) {
+            await recalculateBalance(previousCustomerId);
+        }
     }, [recalculateBalance]);
+
 
     useEffect(() => {
         // Ideally, this would somehow be paginated and cached locally, however, this is fine for now
@@ -168,9 +182,9 @@ export function RepositoryProvider({children}: {children: ReactNode}) {
         void fetchPayments();
         void fetchCustomers();
         void fetchProducts();
-    }, [fetchInvoices, fetchPayments]);
+    }, [fetchCustomers, fetchInvoices, fetchPayments, fetchProducts]);
 
-    return <RepositoryContext.Provider value={{invoices, payments, insertInvoice, recalculateBalance, nextInvoiceRefNo, customers, products}}>
+    return <RepositoryContext.Provider value={{invoices, payments, insertInvoice, recalculateBalance, nextInvoiceRefNo, customers, products, insertPayment, updatePayment}}>
         {children}
     </RepositoryContext.Provider>
 }

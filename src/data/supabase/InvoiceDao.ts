@@ -16,7 +16,7 @@ class InvoiceDao {
         return data;
     }
 
-    async insert(invoice: Omit<Invoice, 'id'>): Promise<Invoice> {
+    async insertOne(invoice: Omit<Invoice, 'id'>): Promise<Invoice> {
         const {data, error} = await supabase.from('invoices')
         .insert(invoice)
         .select();
@@ -29,7 +29,7 @@ class InvoiceDao {
         return data[0];
     }
 
-    async update(invoice: Invoice): Promise<Invoice> {
+    async updateOne(invoice: Partial<Invoice>): Promise<Invoice> {
         const {data, error} = await supabase.from('invoices')
         .update(invoice)
         .eq('id', invoice.id)

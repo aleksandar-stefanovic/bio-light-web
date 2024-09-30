@@ -1,5 +1,6 @@
 import supabase from '../../supabase/client';
 import Payment from '../Payment.ts';
+import _ from 'lodash';
 
 export async function getAll(): Promise<Payment[]> {
     const {data, error} = await supabase.from('payments').select('*').order('id', {ascending: false});
@@ -10,16 +11,21 @@ export async function getAll(): Promise<Payment[]> {
     return data;
 }
 
-export async function getRangeLast(skip: number, count: number): Promise<Payment[]> {
-    const {data, error} = await supabase.from('payments').select('*')
-    .order('date', {ascending: false})
-    .range(skip, skip + count);
+export async function insertOne(payment: Payment): Promise<void> {
+    const withoutId: Omit<Payment, 'id'> = _.omit(payment, 'id');
+    const {data, error} = await supabase.from('payments').insert(withoutId).select();
 
     if (error) {
         throw error;
     }
 
-    data?.forEach(payment => payment.date = new Date(payment.date))
+    payment.id = data[0].id;
+}
 
-    return data;
+export async function updateOne(payment: Partial<Payment>): Promise<void> {
+    const {error} = await supabase.from('payments').update(payment).eq('id', payment.id);
+
+    if (error) {
+        throw error;
+    }
 }

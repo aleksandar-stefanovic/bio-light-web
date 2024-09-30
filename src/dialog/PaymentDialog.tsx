@@ -1,6 +1,6 @@
 import Payment from '../data/Payment.ts';
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle, InputAdornment, TextField} from '@mui/material';
-import Customer from '../data/Customer.ts';
+import Customer, {CustomerId} from '../data/Customer.ts';
 import {ChangeEvent, useCallback, useEffect, useState} from 'react';
 import CustomerPickerDialog from './CustomerPickerDialog.tsx';
 import {useRepository} from '../repository/Repository.tsx';
@@ -13,20 +13,20 @@ export interface PaymentDialogProps {
     open: boolean;
     existingPayment?: Payment; // Provide this parameter when editing an existing payment
     intent: 'create'|'edit';
-    onClose: (confirmed: boolean, intent: 'create'|'edit', payment?: Payment) => void;
+    onClose: (confirmed: boolean, intent: 'create'|'edit', payment?: Payment, previousCustomerId?: CustomerId) => void;
 }
 
 export default function PaymentDialog({open, existingPayment, intent, onClose}: PaymentDialogProps) {
 
-    const {customers, payments} = useRepository();
+    const {invoices, customers, payments} = useRepository();
 
-    const [customer, setCustomer] = useState<Customer | undefined>(customers.find(customer => customer.id === existingPayment?.customer_id));
+    const [customer, setCustomer] = useState<Customer>();
     const [date, setDate] = useState<Dayjs>(dayjs());
     const [invoice, setInvoice] = useState<Invoice>(); // Invoice that this invoice pays
     const [amountString, setAmountString] = useState<string>('');
     const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
     const [invoicePickerOpen, setInvoicePickerOpen] = useState(false);
-    const [amountFieldHasErrors, setAmountFieldHasErros] = useState(false);
+    const [amountFieldHasErrors, setAmountFieldHasErrors] = useState(false);
 
     useEffect(() => {
         // Set the date to the date of the last payment, as payments are ingested ordered by the date
@@ -36,6 +36,17 @@ export default function PaymentDialog({open, existingPayment, intent, onClose}: 
     const onCustomerPickerDialogClose = useCallback(() => {
         setCustomerPickerOpen(false);
     }, []);
+
+    useEffect(() => {
+        if (open && existingPayment) {
+            setCustomer(customers.find(customer => customer.id === existingPayment.customer_id));
+            setDate(dayjs(existingPayment.date));
+            if (existingPayment.invoice_id) {
+                setInvoice(invoices.find(invoice => invoice.id === existingPayment.invoice_id));
+            }
+            setAmountString(existingPayment.amount.toFixed(2).replace('.', ','));
+        }
+    }, [open, existingPayment, customers, invoices]);
 
     /*
      * defined → set the value,
@@ -58,7 +69,7 @@ export default function PaymentDialog({open, existingPayment, intent, onClose}: 
 
     const validateAmountInput = useCallback((str: string = amountString) => {
         const hasErrors = isNaN(parseAmountString(str));
-        setAmountFieldHasErros(hasErrors);
+        setAmountFieldHasErrors(hasErrors);
         return hasErrors;
     }, [amountString, parseAmountString]);
 
@@ -87,9 +98,9 @@ export default function PaymentDialog({open, existingPayment, intent, onClose}: 
                 invoice_id: invoice?.id,
                 balance: 0
             };
-            onClose(true, intent, payment);
+            onClose(true, intent, payment, existingPayment?.customer_id);
         }
-    }, [amountFieldHasErrors, amountString, customer, date, existingPayment?.id, intent, invoice?.id, onClose, parseAmountString, validateAmountInput]);
+    }, [amountFieldHasErrors, amountString, customer, date, existingPayment?.customer_id, existingPayment?.id, intent, invoice?.id, onClose, parseAmountString, validateAmountInput]);
 
     const readyToSave = customer && parseAmountString(amountString) > 0 && date;
 
@@ -110,7 +121,7 @@ export default function PaymentDialog({open, existingPayment, intent, onClose}: 
                 format={'DD.MM.YYYY.'}
                 onChange={(newValue) => {
                     if (newValue) {
-                        setDate(date);
+                        setDate(newValue);
                     }
                 }}
             />

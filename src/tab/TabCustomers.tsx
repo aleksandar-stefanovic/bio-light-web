@@ -6,10 +6,10 @@ import {Button} from '@mui/material';
 import CustomerDialog from '../dialog/CustomerDialog.tsx';
 import Transaction from '../data/Transaction.ts';
 import * as CustomerDao from '../data/supabase/CustomerDao.ts';
-import Invoice from '../data/Invoice.ts';
 import dayjs from 'dayjs';
 import {useRepository} from '../repository/Repository.tsx';
 import TabProps from './TabProps.ts';
+import _ from 'lodash';
 
 export default function TabCustomers({visible, style, theme}: TabProps) {
 
@@ -23,7 +23,9 @@ export default function TabCustomers({visible, style, theme}: TabProps) {
     useEffect(() => {
         if (selectedCustomer) {
             // TODO this functionality should go through the Repository
-            CustomerDao.getAllTransactions(selectedCustomer.id).then(transactions => setTransactions(transactions));
+            CustomerDao.getAllTransactions(selectedCustomer.id).then(transactions => {
+                setTransactions(_.reverse(transactions));
+            });
         }
     }, [selectedCustomer]);
 
@@ -43,17 +45,18 @@ export default function TabCustomers({visible, style, theme}: TabProps) {
     }, [customers, searchTerm]);
 
     const customerColumns: GridColDef[] = useMemo(() => [
+        {field: 'id', headerName: 'RB', width: 30},
         {field: 'name', headerName: 'Naziv', flex: 1},
         {field: 'address', headerName: 'Adresa', flex: 1},
         {field: 'balance', headerName: 'Stanje', align: 'right'}
     ], []);
 
-    const invoiceColumns: GridColDef[] = [
-        {field: 'ref_no', headerName: 'RB'},
+    const transactionColumns: GridColDef[] = [
+        {field: 'ref_no', headerName: 'RB', valueGetter: (_, row) => row.ref_no ?? row.id}, // Ref no. for payments is actually its ID
         {field: 'type', headerName: 'Tip', valueGetter: (_, row) => 'date_due' in row ? 'Račun' : 'Uplata'},
         {field: 'date', headerName: 'Datum', valueGetter: (value) => dayjs(value).format('DD.MM.YYYY.')},
         {field: 'date_due', headerName: 'Datum valute', flex: 1, valueGetter: (value) => value && dayjs(value).format('DD.MM.YYYY.')},
-        {field: 'amount_before_discount', headerName: 'Pre popusta', align: 'right', flex: 1, valueGetter: (value) => Number(value).toFixed(2), headerAlign: 'right'},
+        {field: 'amount_before_discount', headerName: 'Pre popusta', align: 'right', flex: 1, valueGetter: (value) => value ? Number(value).toFixed(2) : '', headerAlign: 'right'},
         {field: 'discount', headerName: 'Popust', align: 'right', flex: 1, valueGetter: (value) => value && Number(value).toFixed(2), headerAlign: 'right'},
         {field: 'amount', headerName: 'Iznos', align: 'right', flex: 1, valueGetter: (value) => (value as number).toFixed(2), headerAlign: 'right'},
         {field: 'balance', headerName: 'Saldo', flex: 1, align: 'right', valueGetter: (value) => (value as number).toFixed(2)},
@@ -89,11 +92,13 @@ export default function TabCustomers({visible, style, theme}: TabProps) {
             </div>
             <div style={{width: '100%', flex: 4, minHeight: 50}}>
                 <DataGrid style={{width: '100%', flex: 4, background: theme.palette.mode === 'light' ? '#f2f2f2' : undefined}}
-                          columns={invoiceColumns}
+                          columns={transactionColumns}
                           rows={transactions}
-                          getRowId={(row: Transaction) => row.id + ((row as Invoice).discount ?? -1)?.toString() }
-                          rowHeight={40}
-                          hideFooter/>
+                          getRowId={(row: Transaction) => {
+                              // Invoices and payments may have the same ID value, so this is something to distinguish them
+                              return 'date_due' in row ? row.id : -row.id;
+                          }}
+                          rowHeight={40}/>
             </div>
 
         </div>

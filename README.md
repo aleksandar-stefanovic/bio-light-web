@@ -8,7 +8,7 @@ so some functionalities are missing.
 | Entity         | Create | Read | Update | Delete | Print |
 |----------------|--------|------|--------|--------|-------|
 | Invoice        | ✔      | ✔    |        | 🛇     | ✔     |
-| Payment        |        | ✔    |        | 🛇     | 🛇    |
+| Payment        | ✔      | ✔    | ✔      | 🛇     | 🛇    |
 | Customer       |        | ✔    |        |        | 🛇    |
 | Reports (TODO) |        |      |        | 🛇     |       |
 
