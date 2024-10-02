@@ -22,14 +22,13 @@ const _ = lodash;
 
 interface TabCreateInvoiceProps extends TabProps {
     nextInvoiceNo: string;
-    onInvoiceSave: (invoice: Invoice) => Promise<void>;
     existingInvoice?: Invoice; // Set this when editing an existing invoice
 }
 
-export default function TabCreateInvoice({style, visible, showSnackbar, nextInvoiceNo, onInvoiceSave, existingInvoice}: TabCreateInvoiceProps) {
+export default function TabCreateInvoice({style, visible, showSnackbar, nextInvoiceNo, existingInvoice}: TabCreateInvoiceProps) {
     const [, setGlobalState] = useGlobalState();
 
-    const {customers} = useRepository();
+    const {customers, insertInvoice} = useRepository();
 
     const [lineItems, setLineItems] = useState<LineItem[]>([]);
     const amount_before_discount = _.sum(lineItems.map(p => p.price * p.count));
@@ -142,7 +141,11 @@ export default function TabCreateInvoice({style, visible, showSnackbar, nextInvo
             setGlobalState({invoiceToPrint: {invoice, customer}});
             setTimeout(async () => {
                 try {
-                    await onInvoiceSave(invoice);
+                    if (existingInvoice) {
+                        // TODO save edited invoice
+                    } else {
+                        await insertInvoice(invoice);
+                    }
                     window.print();
                     showSnackbar('success', 'Otpremnica zatvorena');
                 } catch (error) {
@@ -153,7 +156,7 @@ export default function TabCreateInvoice({style, visible, showSnackbar, nextInvo
                 }
             }, 500);
         }
-    }, [customer, existingInvoice?.id, existingInvoice?.ref_no, invoiceDate, dateDue, nextInvoiceNo, lineItems, amount_before_discount, discount, amount, setGlobalState, onInvoiceSave, showSnackbar, cleanup]);
+    }, [customer, existingInvoice, invoiceDate, dateDue, nextInvoiceNo, lineItems, amount_before_discount, discount, amount, setGlobalState, showSnackbar, insertInvoice, cleanup]);
 
     return <div style={{...style, display: visible ? 'flex' : 'none', flexDirection: 'row', height: '100%'}}>
         <div style={{flex: 1, display: 'flex', flexDirection: 'column', height: '100%'}}>

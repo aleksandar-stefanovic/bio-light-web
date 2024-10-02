@@ -29,8 +29,8 @@ const RepositoryContext = createContext<RepositoryProps>({
     nextInvoiceRefNo: '',
     products: [],
     customers: [],
-    insertPayment: () => { return Promise.resolve(); },
-    updatePayment: () => { return Promise.resolve(); }
+    insertPayment: () => { throw Error(); },
+    updatePayment: () => { throw Error(); },
 });
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -149,14 +149,10 @@ export function RepositoryProvider({children}: {children: ReactNode}) {
         });
         await LineItemDao.insert(lineItems);
 
-        const newInvoices = [storedInvoice, ...invoices];
-
-        setInvoices(newInvoices);
-
         await recalculateBalance(invoice.customer_id);
 
         return storedInvoice;
-    }, [invoices, recalculateBalance]);
+    }, [recalculateBalance]);
 
     const insertPayment = useCallback(async(payment: Payment) => {
         await PaymentDao.insertOne(payment);

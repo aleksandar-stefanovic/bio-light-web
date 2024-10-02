@@ -110,7 +110,7 @@ export default function TabCustomers({visible, style, theme}: TabProps) {
             <Button variant='outlined' size='small' onClick={() => recalculateBalance(selectedCustomer!.id)}>Preračunaj</Button>
         </div>
         {selectedCustomer && <CustomerDialog open={customerDialogOpen}
-                                       customer={selectedCustomer}
+                                       existingCustomer={selectedCustomer}
                                        onClose={onCustomerDialogClose} />}
     </div>
 }

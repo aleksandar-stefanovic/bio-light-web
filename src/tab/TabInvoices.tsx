@@ -13,11 +13,7 @@ import {sortBy} from 'lodash';
 import TabCreateInvoice from './TabCreateInvoice.tsx';
 import {useRepository} from '../repository/Repository.tsx';
 
-interface TabInvoicesProps extends TabProps {
-    onInvoiceUpdate: (invoice: Invoice) => Promise<void>
-}
-
-export default function TabInvoices({onInvoiceUpdate, visible, style, showSnackbar, theme}: TabInvoicesProps) {
+export default function TabInvoices({visible, style, showSnackbar, theme}: TabProps) {
 
     const {customers} = useRepository();
 
@@ -113,7 +109,7 @@ export default function TabInvoices({onInvoiceUpdate, visible, style, showSnackb
                     columns={lineItemColumns}
                     rows={selectedLineItems}
                     rowHeight={40}
-                    getRowId={stProizvod => (stProizvod?.racun_id || 0) * 100 + (stProizvod?.na_spisku || 0) || 0}
+                    getRowId={lineItem => (lineItem?.racun_id || 0) * 100 + (lineItem?.na_spisku || 0) || 0}
                     hideFooter/>
             </div>
 
@@ -129,7 +125,6 @@ export default function TabInvoices({onInvoiceUpdate, visible, style, showSnackb
         <Dialog open={invoiceEditorOpen} onClose={() => { setInvoiceEditorOpen(false); }} fullWidth maxWidth='xl'>
             <DialogContent>
                 <TabCreateInvoice nextInvoiceNo={selectedInvoice?.ref_no ?? '0'}
-                                  onInvoiceSave={onInvoiceUpdate}
                                   visible={invoiceEditorOpen}
                                   showSnackbar={showSnackbar}
                                   existingInvoice={selectedInvoice}

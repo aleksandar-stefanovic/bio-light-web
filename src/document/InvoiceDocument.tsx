@@ -1,6 +1,6 @@
 import Invoice from "../data/Invoice.ts";
 import Customer from "../data/Customer.ts";
-import './RacunDocument.css';
+import './InvoiceDocument.css';
 import logo from '../logo.png';
 import ScopedCssBaseline from "@mui/material/ScopedCssBaseline";
 

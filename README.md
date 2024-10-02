@@ -23,4 +23,21 @@ and functions for manipulating that data). It uses the Supabase database and aut
 is secured with row-level security, providing CRUD access to authenticated users only. The application itself is hosted
 on Firebase.
 
+# Printing documents
+The documents are rendered as React components (see [InvoiceDocument](https://github.com/aleksandar-stefanovic/bio-light-web/blob/master/src/document/InvoiceDocument.tsx)
+for an example). Printing is done using the browser printing dialog, utilizing this CSS rule for the "GUI" part of the app:
+```css
+@media print {
+  .screen-only {
+    display: none !important;
+  }
+
+  body {
+    height: unset;
+    width: unset;
+  }
+}
+```
+That way, the only thing that is displayed while printing is the document itself.
+
 # Screenshots (TODO)
