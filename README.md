@@ -9,7 +9,7 @@ so some functionalities are missing.
 |----------------|--------|------|--------|--------|-------|
 | Invoice        | ✔      | ✔    |        | 🛇     | ✔     |
 | Payment        | ✔      | ✔    | ✔      | 🛇     | 🛇    |
-| Customer       |        | ✔    |        |        | 🛇    |
+| Customer       | ✔      | ✔    | ✔      | ✔      | 🛇    |
 | Reports (TODO) |        |      |        | 🛇     |       |
 
 # Mixed language
@@ -40,4 +40,4 @@ for an example). Printing is done using the browser printing dialog, utilizing t
 ```
 That way, the only thing that is displayed while printing is the document itself.
 
-# Screenshots (TODO)
+# Screenshots (TODO once the application is translated to English)

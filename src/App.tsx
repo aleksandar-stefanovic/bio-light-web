@@ -23,6 +23,7 @@ import supabase from './supabase/client';
 import {User} from '@supabase/supabase-js';
 import TabPayments from './tab/TabPayments.tsx';
 import {RepositoryProvider, useRepository} from './repository/Repository.tsx';
+import { srRS } from '@mui/material/locale';
 
 function App() {
     const [tabIndex, setTabIndex] = useState(0);
@@ -85,7 +86,7 @@ function App() {
         palette: {
             mode: prefersDarkMode ? 'dark' : 'light',
         },
-    }), [prefersDarkMode]);
+    }, srRS), [prefersDarkMode]);
 
     return user ? <>
             <RepositoryProvider>

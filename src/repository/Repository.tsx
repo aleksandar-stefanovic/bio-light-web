@@ -8,6 +8,8 @@ import Payment from '../data/Payment.ts';
 import Customer, {CustomerId} from '../data/Customer.ts';
 import Product from '../data/Product.ts';
 import ProductDao from '../data/supabase/ProductDao.ts';
+import Price from '../data/Price.ts';
+import {upsertPrices} from '../data/supabase/PriceDao.ts';
 
 interface RepositoryProps {
     invoices: Invoice[];
@@ -19,6 +21,8 @@ interface RepositoryProps {
     products: Product[];
     insertPayment: (payment: Payment) => Promise<void>;
     updatePayment: (payment: Payment, previousCustomerId?: CustomerId) => Promise<void>;
+    insertCustomer: (customer: Customer, prices: Price[]) => Promise<void>;
+    updateCustomer: (customer: Customer, prices: Price[]) => Promise<void>;
 }
 
 const RepositoryContext = createContext<RepositoryProps>({
@@ -31,6 +35,8 @@ const RepositoryContext = createContext<RepositoryProps>({
     customers: [],
     insertPayment: () => { throw Error(); },
     updatePayment: () => { throw Error(); },
+    insertCustomer: () => { throw Error(); },
+    updateCustomer: () => { throw Error(); },
 });
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -171,6 +177,28 @@ export function RepositoryProvider({children}: {children: ReactNode}) {
         }
     }, [recalculateBalance]);
 
+    const insertCustomer = useCallback(async(customer: Customer, prices: Price[]) => {
+        const insertedCustomer = await CustomerDao.insertOne(customer);
+        prices.forEach(price => {
+            price.customer_id = insertedCustomer.id;
+        });
+
+        await upsertPrices(prices);
+
+        setCustomers(customers => [...customers, insertedCustomer]);
+    }, []);
+
+    const updateCustomer = useCallback(async(customer: Customer, prices: Price[]) => {
+        await CustomerDao.updateOne(customer);
+        await upsertPrices(prices);
+
+        setCustomers(customers => {
+            return customers.map(prevCustomer => {
+                return prevCustomer.id === customer.id ? customer : prevCustomer;
+            });
+        });
+    }, []);
+
 
     useEffect(() => {
         // Ideally, this would somehow be paginated and cached locally, however, this is fine for now
@@ -180,7 +208,19 @@ export function RepositoryProvider({children}: {children: ReactNode}) {
         void fetchProducts();
     }, [fetchCustomers, fetchInvoices, fetchPayments, fetchProducts]);
 
-    return <RepositoryContext.Provider value={{invoices, payments, insertInvoice, recalculateBalance, nextInvoiceRefNo, customers, products, insertPayment, updatePayment}}>
+    return <RepositoryContext.Provider value={{
+        invoices,
+        payments,
+        insertInvoice,
+        recalculateBalance,
+        nextInvoiceRefNo,
+        customers,
+        products,
+        insertPayment,
+        updatePayment,
+        insertCustomer,
+        updateCustomer
+    }}>
         {children}
     </RepositoryContext.Provider>
 }

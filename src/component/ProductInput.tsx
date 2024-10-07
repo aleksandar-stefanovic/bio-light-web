@@ -26,7 +26,8 @@ interface ProductInputProps {
 
 export default function ProductInput({style, onAdd, disabled, customerPrices}: ProductInputProps) {
 
-  const {products} = useRepository();
+  const {products: allProducts} = useRepository();
+  const products = allProducts.filter(product => product.active);
 
   const [selectedProduct, setSelectedProduct] = React.useState<Product>();
   const [price, setPrice] = useState<Price>();

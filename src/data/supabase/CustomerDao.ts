@@ -36,16 +36,32 @@ export async function getAllTransactions(customerId: CustomerId): Promise<Transa
     return _.sortBy(transactions, transaction => transaction.date);
 }
 
-export async function updateOne(customer: (Partial<Customer> & {id: CustomerId})) {
-    const {data, error} = await supabase.from('customers')
+export async function updateOne(customer: (Partial<Customer> & {id: CustomerId})): Promise<void> {
+    const {error} = await supabase.from('customers')
     .update(customer)
     .eq('id', customer.id)
-    .select();
 
     if (error) {
         console.error(error);
         throw error;
     }
+}
+
+export async function insertOne(customer: Customer): Promise<Customer> {
+    if (customer.id !== 0) {
+        throw new Error(`New customer can't have ID other than 0.`);
+    }
+
+    const customerWithoutId = _.omit(customer, 'id');
+
+    const {data, error} = await supabase.from('customers')
+    .insert(customerWithoutId)
+    .select();
+
+    if (error) {
+        throw error;
+    }
 
     return data[0];
 }
+

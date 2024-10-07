@@ -10,15 +10,17 @@ import dayjs from 'dayjs';
 import {useRepository} from '../repository/Repository.tsx';
 import TabProps from './TabProps.ts';
 import _ from 'lodash';
+import Price from '../data/Price.ts';
 
-export default function TabCustomers({visible, style, theme}: TabProps) {
+export default function TabCustomers({visible, style, theme, showSnackbar}: TabProps) {
 
-    const [selectedCustomer, setSelectedCustomer] = React.useState<Customer>();
-    const [searchTerm, setSearchTerm] = React.useState<string>('')
-    const [customerDialogOpen, setCustomerDialogOpen] = React.useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer>();
+    const [customerToEdit, setCustomerToEdit] = useState<Customer>();
+    const [searchTerm, setSearchTerm] = useState<string>('')
+    const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
 
-    const {recalculateBalance, customers} = useRepository();
+    const {recalculateBalance, customers, insertCustomer, updateCustomer} = useRepository();
 
     useEffect(() => {
         if (selectedCustomer) {
@@ -28,7 +30,6 @@ export default function TabCustomers({visible, style, theme}: TabProps) {
             });
         }
     }, [selectedCustomer]);
-
 
     const customersFiltered = React.useMemo(() => {
         const searchTerms = searchTerm.trim().toLowerCase().split(/\s+/)
@@ -62,18 +63,31 @@ export default function TabCustomers({visible, style, theme}: TabProps) {
         {field: 'balance', headerName: 'Saldo', flex: 1, align: 'right', valueGetter: (value) => (value as number).toFixed(2)},
     ]
 
-    async function insertCustomer() {
-        // TODO
-    }
+    const openCustomerDialog = useCallback((intent: 'create'|'edit') => {
+        if (intent === 'edit') {
+            setCustomerToEdit(selectedCustomer);
+        } else {
+            setCustomerToEdit(undefined);
+        }
 
-    const openCustomerDialog = useCallback(async() => {
         setCustomerDialogOpen(true);
-    }, []);
+    }, [selectedCustomer]);
 
-    function onCustomerDialogClose(save: boolean) {
+    const onCustomerDialogClose = useCallback(async(customer?: Customer, prices?: Price[]) => {
         setCustomerDialogOpen(false);
-        // TODO
-    }
+        if (customer && prices) {
+            try {
+                if (customer.id === 0) {
+                    await insertCustomer(customer, prices);
+                } else {
+                    await updateCustomer(customer, prices);
+                }
+                showSnackbar('success', 'Uspešno sačuvan kupac.');
+            } catch (error) {
+                showSnackbar('error', `Greška: ${error}`);
+            }
+        }
+    }, [insertCustomer, showSnackbar, updateCustomer]);
 
     const onCustomerRowSelected = useCallback(async([customerId]: GridRowSelectionModel) => {
         setSelectedCustomer(customers.find(customers => customers.id === customerId));
@@ -104,13 +118,13 @@ export default function TabCustomers({visible, style, theme}: TabProps) {
         </div>
         <div style={{display: 'flex', flexDirection: 'column', gap: 10}}>
             <SearchBar onSearchTerm={setSearchTerm} timeout={300}/>
-            <Button variant='outlined' size='small' onClick={insertCustomer}>Dodaj kupca</Button>
-            <Button variant='outlined' size='small' disabled={!selectedCustomer} onClick={openCustomerDialog}>Izmeni kupca</Button>
+            <Button variant='outlined' size='small' onClick={() => { openCustomerDialog('create'); }}>Dodaj kupca</Button>
+            <Button variant='outlined' size='small' disabled={!selectedCustomer} onClick={() => { openCustomerDialog('edit'); }}>Izmeni kupca</Button>
             <Button variant='outlined' size='small' disabled={true}>Napravi izveštaj za kupca</Button>
             <Button variant='outlined' size='small' onClick={() => recalculateBalance(selectedCustomer!.id)}>Preračunaj</Button>
         </div>
         {selectedCustomer && <CustomerDialog open={customerDialogOpen}
-                                       existingCustomer={selectedCustomer}
+                                       existingCustomer={customerToEdit}
                                        onClose={onCustomerDialogClose} />}
     </div>
 }

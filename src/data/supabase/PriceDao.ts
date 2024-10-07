@@ -9,3 +9,11 @@ export async function getForCustomer(customer: Customer): Promise<Price[]> {
     }
     return data;
 }
+
+export async function upsertPrices(prices: Price[]): Promise<void> {
+    const {error} = await supabase.from('prices').upsert(prices);
+
+    if (error) {
+        throw error;
+    }
+}
