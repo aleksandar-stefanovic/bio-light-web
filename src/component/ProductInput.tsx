@@ -81,7 +81,7 @@ export default function ProductInput({style, onAdd, disabled, customerPrices}: P
         unit,
         bulk: isBulk,
         order_no: 0,
-        invoice_no: 0,
+        invoice_id: 0,
         ean,
         name,
       });

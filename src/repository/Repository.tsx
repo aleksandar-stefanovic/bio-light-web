@@ -10,10 +10,12 @@ import Product from '../data/Product.ts';
 import ProductDao from '../data/supabase/ProductDao.ts';
 import Price from '../data/Price.ts';
 import {upsertPrices} from '../data/supabase/PriceDao.ts';
+import LineItem from '../data/LineItem.ts';
 
 interface RepositoryProps {
     invoices: Invoice[];
-    insertInvoice: (invoice: Invoice) => Promise<Invoice>;
+    insertInvoice: (invoice: Invoice, lineItems: LineItem[]) => Promise<Invoice>;
+    updateInvoice: (invoice: Invoice, lineItems: LineItem[], previousCustomerId?: CustomerId) => Promise<void>;
     payments: Payment[];
     recalculateBalance: (customerId: CustomerId) => Promise<void>;
     nextInvoiceRefNo: string;
@@ -37,6 +39,7 @@ const RepositoryContext = createContext<RepositoryProps>({
     updatePayment: () => { throw Error(); },
     insertCustomer: () => { throw Error(); },
     updateCustomer: () => { throw Error(); },
+    updateInvoice: () => { throw Error(); },
 });
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -147,17 +150,27 @@ export function RepositoryProvider({children}: {children: ReactNode}) {
         await fetchPayments();
     }, [fetchInvoices, fetchPayments]);
 
-    const insertInvoice = useCallback(async(invoice: Invoice) => {
+    const insertInvoice = useCallback(async(invoice: Invoice, lineItems: LineItem[]) => {
         const storedInvoice = await InvoiceDao.insertOne(invoice);
-        const lineItems = invoice.lineItems;
         lineItems.forEach(lineItem => {
-            lineItem.invoice_no = storedInvoice.id;
+            lineItem.invoice_id = storedInvoice.id;
         });
         await LineItemDao.insert(lineItems);
 
         await recalculateBalance(invoice.customer_id);
 
         return storedInvoice;
+    }, [recalculateBalance]);
+
+    const updateInvoice = useCallback(async(invoice: Invoice, lineItems: LineItem[], previousCustomerId?: CustomerId) => {
+        await InvoiceDao.updateOne(invoice);
+        await LineItemDao.insert(lineItems);
+
+        await recalculateBalance(invoice.customer_id);
+        if (previousCustomerId) {
+            await recalculateBalance(previousCustomerId);
+        }
+
     }, [recalculateBalance]);
 
     const insertPayment = useCallback(async(payment: Payment) => {
@@ -212,6 +225,7 @@ export function RepositoryProvider({children}: {children: ReactNode}) {
         invoices,
         payments,
         insertInvoice,
+        updateInvoice,
         recalculateBalance,
         nextInvoiceRefNo,
         customers,
@@ -219,7 +233,7 @@ export function RepositoryProvider({children}: {children: ReactNode}) {
         insertPayment,
         updatePayment,
         insertCustomer,
-        updateCustomer
+        updateCustomer,
     }}>
         {children}
     </RepositoryContext.Provider>

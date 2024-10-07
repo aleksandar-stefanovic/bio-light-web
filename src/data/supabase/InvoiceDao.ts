@@ -1,5 +1,6 @@
 import Invoice from '../Invoice.ts';
 import supabase from '../../supabase/client';
+import _ from 'lodash';
 
 class InvoiceDao {
     async getAll(): Promise<Invoice[]> {
@@ -16,9 +17,10 @@ class InvoiceDao {
         return data;
     }
 
-    async insertOne(invoice: Omit<Invoice, 'id'>): Promise<Invoice> {
+    async insertOne(invoice: Invoice): Promise<Invoice> {
+        const withoutId = _.omit(invoice, 'id');
         const {data, error} = await supabase.from('invoices')
-        .insert(invoice)
+        .insert(withoutId)
         .select();
 
         if (error) {
@@ -30,6 +32,9 @@ class InvoiceDao {
     }
 
     async updateOne(invoice: Partial<Invoice>): Promise<Invoice> {
+        if (!invoice.id) {
+            throw new Error('ID must be provided when updating invoices.');
+        }
         const {data, error} = await supabase.from('invoices')
         .update(invoice)
         .eq('id', invoice.id)

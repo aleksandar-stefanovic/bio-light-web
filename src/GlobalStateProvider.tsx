@@ -2,9 +2,10 @@ import React, {Dispatch, useContext} from 'react';
 import Invoice from "./data/Invoice.ts";
 import Customer from "./data/Customer.ts";
 import Product from "./data/Product.ts";
+import LineItem from './data/LineItem.ts';
 
 interface GlobalStateProps {
-    invoiceToPrint?: {invoice: Invoice, customer: Customer},
+    invoiceToPrint?: {invoice: Invoice, customer: Customer, lineItems: LineItem[]},
     products?: Product[]
 }
 

@@ -1,5 +1,4 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import './App.css';
 import {
     Alert,
     Button,
@@ -16,13 +15,12 @@ import {useGlobalState} from './GlobalStateProvider';
 import LoginPage from './LoginPage';
 import TabCustomers from './tab/TabCustomers.tsx';
 import TabInvoices from './tab/TabInvoices.tsx';
-import Invoice from './data/Invoice.ts';
 import InvoiceDocument from './document/InvoiceDocument.tsx';
 import {signOut as so} from './user/Auth';
 import supabase from './supabase/client';
 import {User} from '@supabase/supabase-js';
 import TabPayments from './tab/TabPayments.tsx';
-import {RepositoryProvider, useRepository} from './repository/Repository.tsx';
+import {RepositoryProvider} from './repository/Repository.tsx';
 import { srRS } from '@mui/material/locale';
 
 function App() {
@@ -35,8 +33,6 @@ function App() {
     }>({open: false, type: 'info', message: ''});
 
     const [user, setUser] = useState<User | null>();
-
-    const {nextInvoiceRefNo} = useRepository();
 
     useEffect(() => {
         if (user === undefined) {
@@ -54,14 +50,6 @@ function App() {
         }
 
     }, [user, setUser]);
-
-    const insertInvoice = useCallback(async (invoice: Invoice) => {
-        // TODO use Repository
-    }, []);
-
-    const updateInvoice = useCallback(async(invoice: Invoice) => {
-        // TODO use Repository
-    }, []);
 
     const showSnackbar = useCallback((type: 'success' | 'warning' | 'info' | 'error' = 'info', message: string) => {
         setSnackbarState({
@@ -109,8 +97,6 @@ function App() {
                         <TabCreateInvoice visible={tabIndex === 0}
                                           style={{flex: 1}}
                                           showSnackbar={showSnackbar}
-                                          onInvoiceSave={insertInvoice}
-                                          nextInvoiceNo={nextInvoiceRefNo}
                                           theme={theme}
                         />
                         <TabCustomers
@@ -124,7 +110,6 @@ function App() {
                             style={{flex: 1}}
                             showSnackbar={showSnackbar}
                             theme={theme}
-                            onInvoiceUpdate={updateInvoice}
                         />
                         <TabPayments visible={tabIndex === 3}
                                      style={{flex: 1}}

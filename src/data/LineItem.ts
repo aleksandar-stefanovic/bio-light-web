@@ -1,6 +1,6 @@
 export default interface LineItem {
   order_no: number;
-  invoice_no: number;
+  invoice_id: number;
   product_id: number;
   count: number;
   discount_perc: number;

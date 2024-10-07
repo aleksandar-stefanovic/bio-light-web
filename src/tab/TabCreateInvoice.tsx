@@ -1,5 +1,5 @@
 import {DataGrid, GridColDef} from '@mui/x-data-grid';
-import {Button, Checkbox, FormControlLabel, IconButton, InputAdornment, TextField} from '@mui/material';
+import {Button, IconButton, InputAdornment, TextField} from '@mui/material';
 import {DatePicker} from '@mui/x-date-pickers';
 import CloseIcon from '@mui/icons-material/Close';
 import {useCallback, useEffect, useMemo, useState} from 'react';
@@ -21,19 +21,20 @@ import {useRepository} from '../repository/Repository.tsx';
 const _ = lodash;
 
 interface TabCreateInvoiceProps extends TabProps {
-    nextInvoiceNo: string;
     existingInvoice?: Invoice; // Set this when editing an existing invoice
+    onSaved?: () => void;
 }
 
-export default function TabCreateInvoice({style, visible, showSnackbar, nextInvoiceNo, existingInvoice}: TabCreateInvoiceProps) {
+export default function TabCreateInvoice({style, visible, showSnackbar, existingInvoice, onSaved}: TabCreateInvoiceProps) {
     const [, setGlobalState] = useGlobalState();
 
-    const {customers, insertInvoice} = useRepository();
+    const {customers, insertInvoice, updateInvoice, nextInvoiceRefNo} = useRepository();
+    const invoiceRefNo = existingInvoice?.ref_no ?? nextInvoiceRefNo;
 
     const [lineItems, setLineItems] = useState<LineItem[]>([]);
     const amount_before_discount = _.sum(lineItems.map(p => p.price * p.count));
-    const discount = _.sum(lineItems.map(p => p.price * p.count * p.discount_perc));
-    const amount = _.sum(lineItems.map(p => p.price * p.count * (1 - p.discount_perc)));
+    const discount = _.sum(lineItems.map(p => p.price * p.count * p.discount_perc / 100));
+    const amount = _.sum(lineItems.map(p => p.price * p.count * (1 - p.discount_perc / 100)));
 
     const onLineItemAdd = useCallback(async (lineItem: LineItem) => {
         lineItem.order_no = !_.isEmpty(lineItems) ? Math.max(...lineItems.map(p => p.order_no)) + 1 : 1;
@@ -130,21 +131,25 @@ export default function TabCreateInvoice({style, visible, showSnackbar, nextInvo
                 id: existingInvoice?.id ?? 0,
                 date: invoiceDate.toDate(),
                 date_due: dateDue.toDate(),
-                ref_no: existingInvoice?.ref_no ?? nextInvoiceNo,
+                ref_no: invoiceRefNo,
                 customer_id: customer.id,
-                lineItems: lineItems,
                 amount_before_discount: amount_before_discount,
                 discount: discount,
                 amount: amount,
-                balance: customer.balance + amount // This only works for new invoices, the logic works differently for edited ones
+                balance: 0 // This will be recalculated upon storing
             };
-            setGlobalState({invoiceToPrint: {invoice, customer}});
+            setGlobalState({invoiceToPrint: {invoice, customer, lineItems}});
             setTimeout(async () => {
                 try {
                     if (existingInvoice) {
-                        // TODO save edited invoice
+                        const customerChanged = existingInvoice.customer_id !== customer.id;
+                        if (customerChanged) {
+                            await updateInvoice(invoice, lineItems, existingInvoice.customer_id);
+                        } else {
+                            await updateInvoice(invoice, lineItems);
+                        }
                     } else {
-                        await insertInvoice(invoice);
+                        await insertInvoice(invoice, lineItems);
                     }
                     window.print();
                     showSnackbar('success', 'Otpremnica zatvorena');
@@ -153,10 +158,12 @@ export default function TabCreateInvoice({style, visible, showSnackbar, nextInvo
                     showSnackbar('error', 'Greška pri čuvanju otpremnice');
                 } finally {
                     cleanup();
+                    onSaved?.();
+
                 }
             }, 500);
         }
-    }, [customer, existingInvoice, invoiceDate, dateDue, nextInvoiceNo, lineItems, amount_before_discount, discount, amount, setGlobalState, showSnackbar, insertInvoice, cleanup]);
+    }, [customer, existingInvoice, invoiceDate, dateDue, invoiceRefNo, amount_before_discount, discount, amount, setGlobalState, lineItems, showSnackbar, updateInvoice, insertInvoice, cleanup]);
 
     return <div style={{...style, display: visible ? 'flex' : 'none', flexDirection: 'row', height: '100%'}}>
         <div style={{flex: 1, display: 'flex', flexDirection: 'column', height: '100%'}}>
@@ -180,7 +187,7 @@ export default function TabCreateInvoice({style, visible, showSnackbar, nextInvo
                                   onSelectCustomer={onSelectCustomer}
                                   onClose={() => setCustomerDialogPickerOpen(false)} />
             <TextField label='Kupac' value={customer?.name || ''}/>
-            <TextField label='Broj računa' value={nextInvoiceNo} slotProps={{htmlInput: {readOnly: true}}}/>
+            <TextField label='Broj računa' value={invoiceRefNo} slotProps={{htmlInput: {readOnly: true}}}/>
             <DatePicker
                 label="Datum računa"
                 value={invoiceDate}
@@ -214,7 +221,7 @@ export default function TabCreateInvoice({style, visible, showSnackbar, nextInvo
                 value={amount.toFixed(2)}
             />
             <Button variant='contained' size='large' onClick={saveInvoice}>{existingInvoice ? 'Sačuvaj račun' : 'Zatvori račun'}</Button>
-            <FormControlLabel control={<Checkbox/>} label="Stavi pečat i potpis" disabled/>
+            {/*<FormControlLabel control={<Checkbox/>} label="Stavi pečat i potpis" disabled/>*/}
         </div>
     </div>;
 }

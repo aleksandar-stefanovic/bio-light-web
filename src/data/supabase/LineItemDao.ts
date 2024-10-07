@@ -1,6 +1,5 @@
 import LineItem from '../LineItem.ts';
 import supabase from '../../supabase/client';
-import type {PostgrestSingleResponse} from '@supabase/supabase-js';
 import {InvoiceId} from '../Invoice.ts';
 
 class LineItemDao {
@@ -12,8 +11,8 @@ class LineItemDao {
     return data;
   }
 
-  async insert(lineItems: LineItem[]): Promise<PostgrestSingleResponse<null>> {
-    return supabase.from('line_items').insert(lineItems);
+  async insert(lineItems: LineItem[]): Promise<void> {
+    supabase.from('line_items').upsert(lineItems);
   }
 }
 

@@ -2,15 +2,16 @@ This application is used for creating invoices, and tracking customer payments a
 specific reports required by law.
 
 # State
-This application was written in Kotlin and JavaFX, but is currently being rewritten from scratch to be a React application,
+This application was initally written in Kotlin and JavaFX, but is currently being rewritten from scratch to be a React application,
 so some functionalities are missing.
 
 | Entity         | Create | Read | Update | Delete | Print |
 |----------------|--------|------|--------|--------|-------|
-| Invoice        | ✔      | ✔    |        | 🛇     | ✔     |
+| Invoice        | ✔      | ✔    | ✔      | 🛇     | ✔     |
 | Payment        | ✔      | ✔    | ✔      | 🛇     | 🛇    |
 | Customer       | ✔      | ✔    | ✔      | ✔      | 🛇    |
-| Reports (TODO) |        |      |        | 🛇     |       |
+| Reports (TODO) | 🛇     |      | 🛇     | 🛇     |       |
+| Statistics     | 🛇     |      | 🛇     | 🛇     | 🛇    |
 
 # Mixed language
 Since this application is used by one specific Serbian company, there could be remnants of Serbian terms in variables.
@@ -28,16 +29,22 @@ The documents are rendered as React components (see [InvoiceDocument](https://gi
 for an example). Printing is done using the browser printing dialog, utilizing this CSS rule for the "GUI" part of the app:
 ```css
 @media print {
-  .screen-only {
-    display: none !important;
-  }
+    .screen-only {
+        display: none !important;
+    }
 
-  body {
-    height: unset;
-    width: unset;
-  }
+    body {
+        height: unset;
+        width: unset;
+    }
+}
+
+@media screen {
+    .print-only {
+        display: none;
+    }
 }
 ```
 That way, the only thing that is displayed while printing is the document itself.
 
-# Screenshots (TODO once the application is translated to English)
+# Screenshots (will do once the application is translated to English)

@@ -1,17 +1,17 @@
-import Invoice from "../data/Invoice.ts";
-import Customer from "../data/Customer.ts";
+import Invoice from '../data/Invoice.ts';
+import Customer from '../data/Customer.ts';
 import './InvoiceDocument.css';
 import logo from '../logo.png';
-import ScopedCssBaseline from "@mui/material/ScopedCssBaseline";
+import ScopedCssBaseline from '@mui/material/ScopedCssBaseline';
+import LineItem from '../data/LineItem.ts';
 
 interface InvoiceDocumentProps {
-    data: {invoice: Invoice, customer: Customer}
+    data: {invoice: Invoice, customer: Customer, lineItems: LineItem[]}
 }
 
-export default function InvoiceDocument({data: {invoice, customer}}: InvoiceDocumentProps) {
+export default function InvoiceDocument({data: {invoice, customer, lineItems}}: InvoiceDocumentProps) {
 
     const format = new Intl.DateTimeFormat('sr-RS', {year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC'})
-    const invoiceNumber = `${invoice.ref_no}/${invoice.date.getFullYear() % 100}`
 
     return <ScopedCssBaseline>
         <div style={{margin: '5% 7%', fontSize: '0.8em'}}>
@@ -69,7 +69,7 @@ export default function InvoiceDocument({data: {invoice, customer}}: InvoiceDocu
                     </p>
                 </div>
             </div>
-            <h2 style={{textAlign: 'center', marginTop: '2%'}}>RAČUN-OTPREMNICA br. {invoiceNumber}</h2>
+            <h2 style={{textAlign: 'center', marginTop: '2%'}}>RAČUN-OTPREMNICA br. {invoice.ref_no}</h2>
 
             <table className='main-table'>
                 <tbody>
@@ -83,7 +83,7 @@ export default function InvoiceDocument({data: {invoice, customer}}: InvoiceDocu
                     <th>Osnovica</th>
                     <th>Vrednost</th>
                 </tr>
-                {invoice.lineItems?.map((lineItem, index) => {
+                {lineItems?.map((lineItem, index) => {
                     return <tr key={index}>
                         <td>{lineItem.ean}</td>
                         <td>{lineItem.name}</td>
@@ -143,7 +143,7 @@ export default function InvoiceDocument({data: {invoice, customer}}: InvoiceDocu
                 </div>
             </div>
             <p style={{marginTop: '5%'}}>Uplatu izvršiti sa pozivom na broj: <span
-                style={{fontWeight: 'bold'}}>97 {invoiceNumber}</span></p>
+                style={{fontWeight: 'bold'}}>97 {invoice.ref_no}</span></p>
 
             <table style={{marginTop: '4%'}}>
                 <tbody>

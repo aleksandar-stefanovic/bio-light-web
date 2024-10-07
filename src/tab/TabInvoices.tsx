@@ -31,9 +31,10 @@ export default function TabInvoices({visible, style, showSnackbar, theme}: TabPr
         {field: 'order_no', headerName: 'RB'},
         {field: 'name', headerName: 'Proizvod', flex: 1},
         {field: 'count', headerName: 'Količina'},
-        {field: 'discount_perc', headerName: 'Rabat', valueGetter: (value) => value + '%'},
-        {field: 'price', headerName: 'Cena'},
+        {field: 'discount_perc', headerName: 'Rabat', valueFormatter: (value) => value + '%'},
+        {field: 'price', headerName: 'Cena', valueFormatter: value => Number(value).toFixed(2)},
         {field: 'unit', headerName: 'JM'},
+        {field: 'amount', headerName: 'Iznos', valueFormatter: value => Number(value).toFixed(2)}
     ];
 
 
@@ -67,7 +68,6 @@ export default function TabInvoices({visible, style, showSnackbar, theme}: TabPr
     React.useEffect(() => {
         if (selectedInvoice) {
             LineItemDao.getByInvoiceId(selectedInvoice.id).then(lineItems => {
-                selectedInvoice.lineItems = lineItems;
                 setSelectedLineItems(lineItems);
             });
         }
@@ -76,12 +76,12 @@ export default function TabInvoices({visible, style, showSnackbar, theme}: TabPr
     const print = useCallback(() => {
         if (selectedInvoice) {
             const customer = customers.find(customer => customer.id === selectedInvoice.customer_id)!;
-            setGlobalState({invoiceToPrint: {invoice: selectedInvoice, customer}});
+            setGlobalState({invoiceToPrint: {invoice: selectedInvoice, customer, lineItems: selectedLineItems}});
             setTimeout(async () => {
                 window.print();
             }, 500);
         }
-    }, [customers, selectedInvoice, setGlobalState]);
+    }, [customers, selectedInvoice, selectedLineItems, setGlobalState]);
 
     const edit = useCallback(() => {
         if (selectedInvoice) {
@@ -105,11 +105,11 @@ export default function TabInvoices({visible, style, showSnackbar, theme}: TabPr
             </div>
             <div style={{width: '100%', flex: 2, minHeight: 50}}>
                 <DataGrid
-                    style={{width: '100%', background: '#f2f2f2'}}
+                    style={{width: '100%'}}
                     columns={lineItemColumns}
                     rows={selectedLineItems}
                     rowHeight={40}
-                    getRowId={lineItem => (lineItem?.racun_id || 0) * 100 + (lineItem?.na_spisku || 0) || 0}
+                    getRowId={(lineItem: LineItem) => (lineItem?.invoice_id ?? 0) * 100 + (lineItem?.order_no ?? 0)}
                     hideFooter/>
             </div>
 
@@ -118,17 +118,16 @@ export default function TabInvoices({visible, style, showSnackbar, theme}: TabPr
             <SearchBar onSearchTerm={setSearchTerm} timeout={300}/>
             <Button variant='outlined' onClick={print}>Štampaj</Button>
             <Button variant='outlined' onClick={edit}>Izmeni račun</Button>
-            {/*<Button variant='outlined' size='small' disabled={!selectedKupac} onClick={openKupacDialog}>Pogledaj kupca</Button>*/}
-            {/*<Button variant='outlined' size='small' disabled={!selectedKupac} onClick={openCeneDialog}>Izmeni cene</Button>*/}
         </div>
 
-        <Dialog open={invoiceEditorOpen} onClose={() => { setInvoiceEditorOpen(false); }} fullWidth maxWidth='xl'>
+        <Dialog className='screen-only' open={invoiceEditorOpen} onClose={() => { setInvoiceEditorOpen(false); }} fullWidth maxWidth='xl'>
             <DialogContent>
-                <TabCreateInvoice nextInvoiceNo={selectedInvoice?.ref_no ?? '0'}
-                                  visible={invoiceEditorOpen}
+                <TabCreateInvoice visible={invoiceEditorOpen}
                                   showSnackbar={showSnackbar}
                                   existingInvoice={selectedInvoice}
-                                  theme={theme}/>
+                                  theme={theme}
+                                  onSaved={() => { setInvoiceEditorOpen(false); }}
+                />
             </DialogContent>
         </Dialog>
     </div>;
