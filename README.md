@@ -2,7 +2,7 @@ This application is used for creating invoices, and tracking customer payments a
 specific reports required by law.
 
 # State
-This application was initally written in Kotlin and JavaFX, but is currently being rewritten from scratch to be a React application,
+This application was initially written in Kotlin and JavaFX, but is currently being rewritten from scratch to be a React application,
 so some functionalities are missing.
 
 | Entity         | Create | Read | Update | Delete | Print |

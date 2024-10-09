@@ -25,6 +25,7 @@ interface RepositoryProps {
     updatePayment: (payment: Payment, previousCustomerId?: CustomerId) => Promise<void>;
     insertCustomer: (customer: Customer, prices: Price[]) => Promise<void>;
     updateCustomer: (customer: Customer, prices: Price[]) => Promise<void>;
+    updatePrices: (prices: Price[]) => Promise<void>;
 }
 
 const RepositoryContext = createContext<RepositoryProps>({
@@ -40,6 +41,7 @@ const RepositoryContext = createContext<RepositoryProps>({
     insertCustomer: () => { throw Error(); },
     updateCustomer: () => { throw Error(); },
     updateInvoice: () => { throw Error(); },
+    updatePrices : () => { throw Error(); }
 });
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -212,6 +214,10 @@ export function RepositoryProvider({children}: {children: ReactNode}) {
         });
     }, []);
 
+    const updatePrices = useCallback(async(prices: Price[])=> {
+        await upsertPrices(prices);
+    }, []);
+
 
     useEffect(() => {
         // Ideally, this would somehow be paginated and cached locally, however, this is fine for now
@@ -234,6 +240,7 @@ export function RepositoryProvider({children}: {children: ReactNode}) {
         updatePayment,
         insertCustomer,
         updateCustomer,
+        updatePrices
     }}>
         {children}
     </RepositoryContext.Provider>

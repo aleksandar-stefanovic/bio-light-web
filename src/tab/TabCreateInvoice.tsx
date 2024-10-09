@@ -8,7 +8,7 @@ import ProductInput from '../component/ProductInput.tsx';
 import TabProps from './TabProps';
 import LineItem from '../data/LineItem.ts';
 import Invoice from '../data/Invoice.ts';
-import lodash from 'lodash';
+import _ from 'lodash';
 import Customer from '../data/Customer.ts';
 import {useGlobalState} from "../GlobalStateProvider";
 import * as PriceDao from '../data/supabase/PriceDao.ts';
@@ -17,8 +17,7 @@ import {Dayjs} from 'dayjs';
 import dayjs from 'dayjs';
 import LineItemDao from '../data/supabase/LineItemDao.ts';
 import {useRepository} from '../repository/Repository.tsx';
-
-const _ = lodash;
+import PriceChangeDialog, {PriceChangeDialogProps} from '../dialog/PriceChangeDialog.tsx';
 
 interface TabCreateInvoiceProps extends TabProps {
     existingInvoice?: Invoice; // Set this when editing an existing invoice
@@ -28,7 +27,7 @@ interface TabCreateInvoiceProps extends TabProps {
 export default function TabCreateInvoice({style, visible, showSnackbar, existingInvoice, onSaved}: TabCreateInvoiceProps) {
     const [, setGlobalState] = useGlobalState();
 
-    const {customers, insertInvoice, updateInvoice, nextInvoiceRefNo} = useRepository();
+    const {customers, insertInvoice, updateInvoice, nextInvoiceRefNo, updatePrices} = useRepository();
     const invoiceRefNo = existingInvoice?.ref_no ?? nextInvoiceRefNo;
 
     const [lineItems, setLineItems] = useState<LineItem[]>([]);
@@ -125,6 +124,40 @@ export default function TabCreateInvoice({style, visible, showSnackbar, existing
         setGlobalState({invoiceToPrint: undefined});
     }, [setCustomer, setLineItems, setGlobalState]);
 
+    const detectChangedPrices = useCallback((lineItems: LineItem[]) => {
+        const changedPrices: {oldPrice: Price, newPrice: Price}[] = [];
+        lineItems.forEach(lineItem => {
+            const price = customerPrices.find(price => price.product_id === lineItem.product_id)!;
+            if (lineItem.bulk) {
+                if (lineItem.price !== price.kg || lineItem.discount_perc !== price.discount_kg) {
+                    const newPrice: Price = {
+                        ...price,
+                        kg: lineItem.price,
+                        discount_kg: lineItem.discount_perc
+                    }
+                    changedPrices.push({oldPrice: price, newPrice});
+                }
+            } else {
+                if (lineItem.price !== price.piece || lineItem.discount_perc !== price.discount_piece) {
+                    const newPrice: Price = {
+                        ...price,
+                        piece: lineItem.price,
+                        discount_piece : lineItem.discount_perc
+                    }
+                    changedPrices.push({oldPrice: price, newPrice});
+                }
+            }
+        });
+
+        return changedPrices;
+    }, [customerPrices]);
+
+    const [priceChangeDialogProps, setPriceChangeDialogProps] = useState<PriceChangeDialogProps>({
+        open: false,
+        changes: [],
+        onClose: () => {}
+    });
+
     const saveInvoice = useCallback(async () => {
         if (customer) {
             const invoice: Invoice = {
@@ -153,17 +186,33 @@ export default function TabCreateInvoice({style, visible, showSnackbar, existing
                     }
                     window.print();
                     showSnackbar('success', 'Otpremnica zatvorena');
+
+                    const changedPrices = detectChangedPrices(lineItems);
+                    if (changedPrices.length > 0) {
+                        setPriceChangeDialogProps({
+                            open: true,
+                            changes: changedPrices,
+                            onClose: async(confirm) => {
+                                if (confirm) {
+                                    await updatePrices(changedPrices.map(({newPrice}) => newPrice));
+                                }
+                                setPriceChangeDialogProps(prevState => ({...prevState, open: false}));
+                                cleanup();
+                                onSaved?.();
+                            }
+                        });
+                    }
+
+
                 } catch (error) {
                     console.error(error);
                     showSnackbar('error', 'Greška pri čuvanju otpremnice');
-                } finally {
                     cleanup();
                     onSaved?.();
-
                 }
             }, 500);
         }
-    }, [customer, existingInvoice, invoiceDate, dateDue, invoiceRefNo, amount_before_discount, discount, amount, setGlobalState, lineItems, showSnackbar, updateInvoice, insertInvoice, cleanup]);
+    }, [customer, existingInvoice, invoiceDate, dateDue, invoiceRefNo, amount_before_discount, discount, amount, setGlobalState, lineItems, showSnackbar, detectChangedPrices, updateInvoice, insertInvoice, cleanup, onSaved, updatePrices]);
 
     return <div style={{...style, display: visible ? 'flex' : 'none', flexDirection: 'row', height: '100%'}}>
         <div style={{flex: 1, display: 'flex', flexDirection: 'column', height: '100%'}}>
@@ -223,5 +272,6 @@ export default function TabCreateInvoice({style, visible, showSnackbar, existing
             <Button variant='contained' size='large' onClick={saveInvoice}>{existingInvoice ? 'Sačuvaj račun' : 'Zatvori račun'}</Button>
             {/*<FormControlLabel control={<Checkbox/>} label="Stavi pečat i potpis" disabled/>*/}
         </div>
+        <PriceChangeDialog {...priceChangeDialogProps}></PriceChangeDialog>
     </div>;
 }

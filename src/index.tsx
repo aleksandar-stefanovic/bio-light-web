@@ -8,6 +8,7 @@ import App from './App.tsx';
 import dayjs from 'dayjs';
 import 'dayjs/locale/sr.js';
 import localeData from 'dayjs/plugin/localeData';
+import './i18n.ts';
 
 dayjs.extend(localeData);
 dayjs.locale('sr')
