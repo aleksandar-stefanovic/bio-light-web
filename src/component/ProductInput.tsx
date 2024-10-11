@@ -15,6 +15,7 @@ import Product from '../data/Product.ts';
 import LineItem from '../data/LineItem.ts';
 import Price from '../data/Price.ts';
 import {useRepository} from '../repository/Repository.tsx';
+import {useTranslation} from 'react-i18next';
 
 interface ProductInputProps {
   style?: React.CSSProperties;
@@ -28,6 +29,8 @@ export default function ProductInput({style, onAdd, disabled, customerPrices}: P
 
   const {products: allProducts} = useRepository();
   const products = allProducts.filter(product => product.active);
+
+  const {t} = useTranslation();
 
   const [selectedProduct, setSelectedProduct] = React.useState<Product>();
   const [defaultPrice, setDefaultPrice] = useState<Price>();
@@ -43,10 +46,7 @@ export default function ProductInput({style, onAdd, disabled, customerPrices}: P
     const productId = event.target.value;
     const product = products.find(product => product.id === productId)!;
     setSelectedProduct(product);
-    const price = customerPrices.find(price => price.product_id === product.id);
-    if (!price) {
-      throw new Error(`Došlo je do greške — ne postoji cena za proizvod ${product.short_name}`);
-    }
+    const price = customerPrices.find(price => price.product_id === product.id)!;
     setDefaultPrice(price);
     setPiecePrice(price.piece);
     setKgPrice(price.kg);
@@ -88,7 +88,7 @@ export default function ProductInput({style, onAdd, disabled, customerPrices}: P
     }
   }, [canAdd, discount, bulk, kgPrice, piecePrice, count, selectedProduct, onAdd]);
 
-  const onRabatChanged = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const onDiscountChanged = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     let sanitized = event.target.value.replace(',', '.');
     if (sanitized.length && sanitized[sanitized.length - 1] === '.') {
       sanitized = sanitized.substring(0, sanitized.length - 1);
@@ -101,12 +101,12 @@ export default function ProductInput({style, onAdd, disabled, customerPrices}: P
 
   return <div style={{...style, display: 'flex', flexDirection: 'row', flexWrap: 'wrap', padding: 10, gap: 10}}>
     <FormControl disabled={disabled}>
-      <InputLabel id='product-select-label' size='small'>Proizvod</InputLabel>
+      <InputLabel id='product-select-label' size='small'>{t('product')}</InputLabel>
       <Select size='small'
               variant='outlined'
               style={{minWidth: 150}}
               labelId='product-select-label'
-              label='Proizvod'
+              label={t('product')}
               value={selectedProduct?.id ?? ''}
               onChange={handleProductSelect}>
         {products?.map(product => {
@@ -114,14 +114,14 @@ export default function ProductInput({style, onAdd, disabled, customerPrices}: P
         })}
       </Select>
     </FormControl>
-    <NumberField label='Količina'
+    <NumberField label={t('amount')}
                  size='small'
                  onChange={setCount}
                  disabled={disabled}
                  style={{width: 100}}/>
     <TextField
         disabled={disabled}
-        label='Rabat'
+        label={t('discountRebate')}
         value={discount}
         style={{width: 100}}
         size='small'
@@ -130,7 +130,7 @@ export default function ProductInput({style, onAdd, disabled, customerPrices}: P
             endAdornment: <InputAdornment position='end'>%</InputAdornment>
           }
         }}
-        onChange={onRabatChanged}
+        onChange={onDiscountChanged}
     />
     <RadioGroup row onChange={handleProductBulkChange} value={bulk ? 'true' : 'false'}>
       <FormControlLabel value={'false'} control={<Radio size='small' disabled={disabled}/>} label='Kom'/>
@@ -141,7 +141,7 @@ export default function ProductInput({style, onAdd, disabled, customerPrices}: P
                    setPiecePrice(Number(event.target.value))
                  }}
                  disabled={disabled || bulk}
-                 label={'Cena (kom)'}
+                 label={t('pricePiece')}
                  style={{width: 120}}></TextField>
       <FormControlLabel value={'true'} control={<Radio size='small' style={{marginLeft: 10}} disabled={disabled}/>}
                         label='Kg'/>
@@ -152,9 +152,9 @@ export default function ProductInput({style, onAdd, disabled, customerPrices}: P
                  onChange={(event) => {
                    setKgPrice(Number(event.target.value))
                  }}
-                 label={'Cena (kg)'}
+                 label={t('priceBulk')}
                  style={{width: 120}}></TextField>
     </RadioGroup>
-    <Button size='small' variant='contained' disabled={!canAdd} onClick={add}>Dodaj proizvod</Button>
+    <Button size='small' variant='contained' disabled={!canAdd} onClick={add}>{t('addProduct')}</Button>
   </div>;
 }
